@@ -1,0 +1,5 @@
+# Ignore binaries output directories.
+binary2_omap4430_linux_debug/
+binary2_omap4430_linux_release/
+binary2_omap5430_linux_debug/
+binary2_omap5430_linux_release/
