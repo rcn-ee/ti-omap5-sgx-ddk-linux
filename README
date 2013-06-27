@@ -24,10 +24,10 @@ License version 2 can be found in the file "GPL-COPYING".
 Build and Install Instructions
 -------------------------------------------
 
-For details see the "INSTALL" file.
+Setup the necessary environment variables. For details see the "INSTALL" file.
 
-To build for, change to the appropriate target directory, e.g.:
-$ cd eurasiacon/build/linux/platform/kbuild
+To build for OMAP5430/DRA7xx, change to the appropriate target directory:
+$ cd eurasiacon/build/linux2/omap5430_linux
 
 Issue the make command:
 $ make BUILD=debug all
