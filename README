@@ -32,16 +32,10 @@ To build for OMAP5430/DRA7xx, change to the appropriate target directory:
 $ cd eurasiacon/build/linux2/omap5430_linux
 
 Issue the make command:
-$ make BUILD=debug all
+$ make
 
-The DDK software must be installed by the root user.  Become the root user:
-$ su
-
-Install the DDK software:
-# make install
-
-Become an ordinary user again:
-$ exit
+The DDK software must be installed by the sudo user.  
+$ sudo -E make kbuild_install
 
 
 Contact information:

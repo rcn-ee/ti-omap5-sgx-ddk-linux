@@ -57,20 +57,16 @@ The following variables may be set on the command line to influence a build.
 
 	BUILD	The type of build being performed.
 			Alternatives are release, timing or debug.
+			Both user mode and kernel mode should be built with 
+			same BUILD flag
 	CFLAGS	Build dependent	optimisations and debug information flags.
 	SILENT	Determines whether text of commands is produced during build.
 
-To build for OMAP5430/DRA7xx, change to the appropriate target directory, e.g.:
+To build for OMAP5430/DRA7xx, change to the appropriate target directory:
 $ cd eurasiacon/build/linux2/omap5430_linux
 
 Issue the make command:
-$ make BUILD=debug all
+$ make
 
-The DDK software must be installed by the root user.  Become the root user:
-$ su
-
-Install the DDK software:
-$ make install
-
-Become an ordinary user again:
-$ exit
+The DDK software must be installed by the sudo user.
+$ sudo -E make kbuild_install
