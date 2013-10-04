@@ -29,7 +29,7 @@ Setup the necessary environment variables. For details see the "INSTALL" file.
 Ensure that the Linux kernel has been built with CONFIG_PREEMPT=y
 
 To build for OMAP5430/DRA7xx, change to the appropriate target directory:
-$ cd eurasiacon/build/linux2/omap5430_linux
+$ cd eurasia_km/eurasiacon/build/linux2/omap5430_linux
 
 Issue the make command:
 $ make
