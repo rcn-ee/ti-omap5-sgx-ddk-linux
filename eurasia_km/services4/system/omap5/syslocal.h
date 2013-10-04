@@ -85,7 +85,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35))
-#include <linux/platform_data/omap-gpu.h>
 #if !defined(PVR_NO_OMAP_TIMER)
 #define	PVR_OMAP_USE_DM_TIMER_API
 #include <plat/dmtimer.h>

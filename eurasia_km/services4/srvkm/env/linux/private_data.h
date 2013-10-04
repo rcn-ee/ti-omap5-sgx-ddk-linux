@@ -92,7 +92,7 @@ typedef struct
 PVRSRV_FILE_PRIVATE_DATA;
 
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
-#include "../drivers/gpu/drm/omapdrm/omap_drv.h"
+#include <omap_drv.h>
 extern int pvr_mapper_id;
 static inline PVRSRV_FILE_PRIVATE_DATA * get_private(struct drm_file *file)
 {

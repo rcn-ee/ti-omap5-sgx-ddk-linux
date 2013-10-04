@@ -59,7 +59,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "lists.h"
 
 #ifdef SUPPORT_DRI_DRM_EXTERNAL
-#  include <../drivers/gpu/drm/omapdrm/omap_drv.h>
+#  include <omap_drv.h>
 #endif
 
 IMG_UINT32	g_ui32InitFlags;

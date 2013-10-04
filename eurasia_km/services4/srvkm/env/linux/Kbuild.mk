@@ -154,7 +154,8 @@ $(PVRSRV_MODNAME)-y += \
 
 ccflags-y += \
  -I$(KERNELDIR)/include/drm \
- -I$(KERNELDIR)/drivers/staging/omapdrm \
+ -I$(KERNELDIR)/include/linux/platform_data \
+ -I$(KERNELDIR)/drivers/gpu/drm/omapdrm \
  -I$(KERNELDIR)/include/linux \
  -I$(TOP)/services4/include/env/linux \
 

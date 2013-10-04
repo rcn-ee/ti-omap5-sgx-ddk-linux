@@ -147,11 +147,10 @@ static PVRSRV_ERROR SysLocateDevices(SYS_DATA *psSysData)
 	IMG_CPU_PHYADDR sCpuPAddr;
 #else
 #if defined(PVR_LINUX_DYNAMIC_SGX_RESOURCE_INFO)
-	struct resource *psDevRes;
-	struct resource *psResIter;
-	IMG_UINT32 ui32ResIterId = 0;
-	IMG_INT32 i32DevIrq;
-	resource_size_t sImgIoremapStart,sImgIoremapEnd;
+	struct resource *dev_res;
+	int dev_irq;
+	int nres = 0;
+	resource_size_t start_addr=0, end_addr=0;
 #endif
 #endif
 
@@ -199,41 +198,44 @@ static PVRSRV_ERROR SysLocateDevices(SYS_DATA *psSysData)
 
 #else /* defined(NO_HARDWARE) */
 #if defined(PVR_LINUX_DYNAMIC_SGX_RESOURCE_INFO)
-	/* get the resource and IRQ through platform resource API */
-	psDevRes = platform_get_resource(gpsPVRLDMDev, IORESOURCE_MEM, ui32ResIterId);
-	if (psDevRes == NULL)
+	dev_res = platform_get_resource(gpsPVRLDMDev, IORESOURCE_MEM, nres++);
+	if (dev_res == NULL)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: platform_get_resource failed", __FUNCTION__));
 		return PVRSRV_ERROR_INVALID_DEVICE;
 	}
 
-	sImgIoremapStart = psDevRes->start;
-	sImgIoremapEnd = psDevRes->end;
-	while(NULL != (psResIter = platform_get_resource(gpsPVRLDMDev, IORESOURCE_MEM, ui32ResIterId))){
-		if (psResIter->start < sImgIoremapStart)
-			sImgIoremapStart = psResIter->start;
-		if (psResIter->end > sImgIoremapEnd)
-			sImgIoremapEnd = psResIter->end;
+	start_addr = dev_res->start;
+	end_addr = dev_res->end;
 
-		ui32ResIterId++;
+	/* get the resource and IRQ through platform resource API */
+	while (NULL != (dev_res = platform_get_resource(gpsPVRLDMDev, IORESOURCE_MEM, nres++)))
+	{
+		if (dev_res->start < start_addr)
+			start_addr = dev_res->start;
+
+		if (dev_res->end > end_addr)
+			end_addr = dev_res->end;
 	}
 
-	i32DevIrq = platform_get_irq(gpsPVRLDMDev, 0);
-	if (i32DevIrq < 0)
+
+
+	dev_irq = platform_get_irq(gpsPVRLDMDev, 0);
+	if (dev_irq < 0)
 	{
-		PVR_DPF((PVR_DBG_ERROR, "%s: platform_get_irq failed (%d)", __FUNCTION__, -i32DevIrq));
+		PVR_DPF((PVR_DBG_ERROR, "%s: platform_get_irq failed (%d)", __FUNCTION__, -dev_irq));
 		return PVRSRV_ERROR_INVALID_DEVICE;
 	}
 	
-	gsSGXDeviceMap.sRegsSysPBase.uiAddr = psDevRes->start;
+	gsSGXDeviceMap.sRegsSysPBase.uiAddr = start_addr;
 	gsSGXDeviceMap.sRegsCpuPBase =
 		SysSysPAddrToCpuPAddr(gsSGXDeviceMap.sRegsSysPBase);
 	PVR_TRACE(("SGX register base: 0x%lx", (unsigned long)gsSGXDeviceMap.sRegsCpuPBase.uiAddr));
 
-	gsSGXDeviceMap.ui32RegsSize = sImgIoremapEnd - sImgIoremapStart; 
+	gsSGXDeviceMap.ui32RegsSize = (unsigned int)(end_addr - start_addr);
 	PVR_TRACE(("SGX register size: %d",gsSGXDeviceMap.ui32RegsSize));
 
-	gsSGXDeviceMap.ui32IRQ = i32DevIrq;
+	gsSGXDeviceMap.ui32IRQ = dev_irq;
 	PVR_TRACE(("SGX IRQ: %d", gsSGXDeviceMap.ui32IRQ));
 #else	/* defined(PVR_LINUX_DYNAMIC_SGX_RESOURCE_INFO) */
 	gsSGXDeviceMap.sRegsSysPBase.uiAddr = SYS_OMAP5430_SGX_REGS_SYS_PHYS_BASE;

@@ -60,8 +60,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <drm/drm.h>
 
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
-#  include <linux/platform_data/omap_drm.h>
-#  include <../drivers/gpu/drm/omapdrm/omap_drv.h>
+#  include <omap_drm.h>
+#  include <omap_drv.h>
 #endif
 
 #include "img_defs.h"

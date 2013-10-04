@@ -365,7 +365,7 @@ DetermineUsersSizeAndByteOffset(LinuxMemArea *psLinuxMemArea,
 }
 
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
-#include "../drivers/gpu/drm/omapdrm/omap_drv.h"
+#include <omap_drv.h>
 #include "syscommon.h"
 static struct omap_gem_vm_ops gem_ops;
 static struct drm_gem_object *
