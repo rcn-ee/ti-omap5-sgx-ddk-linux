@@ -66,7 +66,7 @@ COMMON_FLAGS = -W -Wall
 #
 COMMON_CFLAGS := $(COMMON_FLAGS) \
  -Wdeclaration-after-statement -Wno-format-zero-length \
- -Wmissing-prototypes -Wstrict-prototypes
+ -Wstrict-prototypes
 
 # Additional warnings, and optional warnings.
 #
