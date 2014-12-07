@@ -268,7 +268,7 @@ static struct platform_device_id powervr_id_table[] = {
 #if defined(SUPPORT_DRI_DRM_EXTERNAL) || !defined(SUPPORT_DRI_DRM)
 #ifdef CONFIG_OF
 static const struct of_device_id omap_gpu_id_table[] = {
-        { .compatible = "ti,omap5-gpu" },
+        { .compatible = "ti,omap4-gpu" },
         {}
 };
 MODULE_DEVICE_TABLE(of, omap_gpu_id_table);
