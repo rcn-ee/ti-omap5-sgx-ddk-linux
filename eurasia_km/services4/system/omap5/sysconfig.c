@@ -149,8 +149,6 @@ static PVRSRV_ERROR SysLocateDevices(SYS_DATA *psSysData)
 #if defined(PVR_LINUX_DYNAMIC_SGX_RESOURCE_INFO)
 	struct resource *dev_res;
 	int dev_irq;
-	int nres = 0;
-	resource_size_t start_addr=0, end_addr=0;
 #endif
 #endif
 
@@ -198,27 +196,13 @@ static PVRSRV_ERROR SysLocateDevices(SYS_DATA *psSysData)
 
 #else /* defined(NO_HARDWARE) */
 #if defined(PVR_LINUX_DYNAMIC_SGX_RESOURCE_INFO)
-	dev_res = platform_get_resource(gpsPVRLDMDev, IORESOURCE_MEM, nres++);
+	/* get the resource and IRQ through platform resource API */
+	dev_res = platform_get_resource(gpsPVRLDMDev, IORESOURCE_MEM, 0);
 	if (dev_res == NULL)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: platform_get_resource failed", __FUNCTION__));
 		return PVRSRV_ERROR_INVALID_DEVICE;
 	}
-
-	start_addr = dev_res->start;
-	end_addr = dev_res->end;
-
-	/* get the resource and IRQ through platform resource API */
-	while (NULL != (dev_res = platform_get_resource(gpsPVRLDMDev, IORESOURCE_MEM, nres++)))
-	{
-		if (dev_res->start < start_addr)
-			start_addr = dev_res->start;
-
-		if (dev_res->end > end_addr)
-			end_addr = dev_res->end;
-	}
-
-
 
 	dev_irq = platform_get_irq(gpsPVRLDMDev, 0);
 	if (dev_irq < 0)
@@ -227,12 +211,12 @@ static PVRSRV_ERROR SysLocateDevices(SYS_DATA *psSysData)
 		return PVRSRV_ERROR_INVALID_DEVICE;
 	}
 	
-	gsSGXDeviceMap.sRegsSysPBase.uiAddr = start_addr;
+	gsSGXDeviceMap.sRegsSysPBase.uiAddr = dev_res->start;
 	gsSGXDeviceMap.sRegsCpuPBase =
 		SysSysPAddrToCpuPAddr(gsSGXDeviceMap.sRegsSysPBase);
 	PVR_TRACE(("SGX register base: 0x%lx", (unsigned long)gsSGXDeviceMap.sRegsCpuPBase.uiAddr));
 
-	gsSGXDeviceMap.ui32RegsSize = (unsigned int)(end_addr - start_addr);
+	gsSGXDeviceMap.ui32RegsSize = (unsigned int)(dev_res->end - dev_res->start);
 	PVR_TRACE(("SGX register size: %d",gsSGXDeviceMap.ui32RegsSize));
 
 	gsSGXDeviceMap.ui32IRQ = dev_irq;
