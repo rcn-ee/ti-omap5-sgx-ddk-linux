@@ -89,6 +89,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #error "The mmap code requires PVR_SECURE_HANDLES"
 #endif
 
+#define SGX_DRM_MAPPER_ID	(0)
+
 /* WARNING:
  * The mmap code has its own mutex, to prevent a possible deadlock,
  * when using gPVRSRVLock.
@@ -1348,8 +1350,9 @@ static void
 MMapVOpenExt(struct vm_area_struct* ps_vma)
 {
 	struct drm_gem_object *obj = ps_vma->vm_private_data;
+	void *priv = omap_gem_priv(obj, SGX_DRM_MAPPER_ID);
 	PKV_OFFSET_STRUCT psOffsetStruct =
-			FindOffsetStructByPID(obj->driver_private, OSGetCurrentProcessIDKM());
+			FindOffsetStructByPID(priv, OSGetCurrentProcessIDKM());
 	if (WARN_ON(!psOffsetStruct))
 		return;
 	LinuxLockMutex(&g_sMMapMutex);
@@ -1361,8 +1364,9 @@ static void
 MMapVCloseExt(struct vm_area_struct* ps_vma)
 {
 	struct drm_gem_object *obj = ps_vma->vm_private_data;
+	void *priv = omap_gem_priv(obj, SGX_DRM_MAPPER_ID);
 	PKV_OFFSET_STRUCT psOffsetStruct =
-			FindOffsetStructByPID(obj->driver_private, OSGetCurrentProcessIDKM());
+			FindOffsetStructByPID(priv, OSGetCurrentProcessIDKM());
 	if (WARN_ON(!psOffsetStruct))
 		return;
 	LinuxLockMutex(&g_sMMapMutex);
@@ -1414,7 +1418,7 @@ PVRMMapExt(struct file* pFile, struct vm_area_struct* ps_vma)
 
 	psOffsetStruct->ui32UserVAddr = ps_vma->vm_start;
 
-	obj->driver_private = psOffsetStruct->psLinuxMemArea;
+	omap_gem_set_priv(obj, SGX_DRM_MAPPER_ID, psOffsetStruct->psLinuxMemArea);
 
 
     /* Compute the flush region (if necessary) inside the mmap mutex */
