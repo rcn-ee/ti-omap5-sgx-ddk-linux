@@ -952,7 +952,7 @@ static IMG_INT CreateProcEntryInDir(struct proc_dir_entry *pdir, const IMG_CHAR 
 	    file = proc_create_data(name, mode, pdir, &pvr_read_proc_operations, handlers);
 	    if (file)
 	    {
-		    PVR_DPF((PVR_DBG_MESSAGE, "Created proc entry %s", name, "?"));
+		    PVR_DPF((PVR_DBG_MESSAGE, "Created proc entry %s", name));
 		    return 0;
 	    }
     }
