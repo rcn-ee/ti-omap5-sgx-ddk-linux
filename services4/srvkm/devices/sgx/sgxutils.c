@@ -57,6 +57,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_debug.h"
 #include "sgxutils.h"
 #include "ttrace.h"
+#include "sgxmmu.h"
 
 #ifdef __linux__
 #include <linux/kernel.h>	// sprintf
@@ -141,29 +142,16 @@ IMG_VOID SGXTestActivePowerEvent (PVRSRV_DEVICE_NODE	*psDeviceNode,
 	PVRSRV_SGXDEV_INFO	*psDevInfo = psDeviceNode->pvDevice;
 	SGXMKIF_HOST_CTL	*psSGXHostCtl = psDevInfo->psSGXHostCtl;
 
-#if defined(SYS_SUPPORTS_SGX_IDLE_CALLBACK)
-	if (!psDevInfo->bSGXIdle &&
-		((psSGXHostCtl->ui32InterruptFlags & PVRSRV_USSE_EDM_INTERRUPT_IDLE) != 0))
-	{
-		psDevInfo->bSGXIdle = IMG_TRUE;
-		SysSGXIdleTransition(psDevInfo->bSGXIdle);
-	}
-	else if (psDevInfo->bSGXIdle &&
-			((psSGXHostCtl->ui32InterruptFlags & PVRSRV_USSE_EDM_INTERRUPT_IDLE) == 0))
-	{
-		psDevInfo->bSGXIdle = IMG_FALSE;
-		SysSGXIdleTransition(psDevInfo->bSGXIdle);
-	}
-#endif /* SYS_SUPPORTS_SGX_IDLE_CALLBACK */
-
 	/*
-	 * Quickly check (without lock) if there is an APM event we should handle.
+	 * Quickly check (without lock) if there is an IDLE or APM event we should handle.
 	 * This check fails most of the time so we don't want to incur lock overhead.
 	 * Check the flags in the reverse order that microkernel clears them to prevent
 	 * us from seeing an inconsistent state.
 	 */
-	if (((psSGXHostCtl->ui32InterruptClearFlags & PVRSRV_USSE_EDM_INTERRUPT_ACTIVE_POWER) == 0) &&
-		((psSGXHostCtl->ui32InterruptFlags & PVRSRV_USSE_EDM_INTERRUPT_ACTIVE_POWER) != 0))
+	if ((((psSGXHostCtl->ui32InterruptClearFlags & PVRSRV_USSE_EDM_INTERRUPT_IDLE) == 0) &&
+		((psSGXHostCtl->ui32InterruptFlags & PVRSRV_USSE_EDM_INTERRUPT_IDLE) != 0)) ||
+		(((psSGXHostCtl->ui32InterruptClearFlags & PVRSRV_USSE_EDM_INTERRUPT_ACTIVE_POWER) == 0) &&
+		((psSGXHostCtl->ui32InterruptFlags & PVRSRV_USSE_EDM_INTERRUPT_ACTIVE_POWER) != 0)))
 	{
 		eError = PVRSRVPowerLock(ui32CallerID, IMG_FALSE);
 		if (eError == PVRSRV_ERROR_RETRY)
@@ -178,40 +166,52 @@ IMG_VOID SGXTestActivePowerEvent (PVRSRV_DEVICE_NODE	*psDeviceNode,
 		}
 
 		/*
+		 * Check again (with lock) if IDLE event has been cleared or handled. A race
+		 * condition may allow multiple threads to pass the quick check.
+		 */
+		if(((psSGXHostCtl->ui32InterruptClearFlags & PVRSRV_USSE_EDM_INTERRUPT_IDLE) == 0) &&
+			((psSGXHostCtl->ui32InterruptFlags & PVRSRV_USSE_EDM_INTERRUPT_IDLE) != 0))
+		{
+			psSGXHostCtl->ui32InterruptClearFlags |= PVRSRV_USSE_EDM_INTERRUPT_IDLE;
+			if (psDevInfo->bSGXIdle == IMG_FALSE)
+			{
+				psDevInfo->bSGXIdle = IMG_TRUE;
+				SysSGXIdleEntered();
+			}
+		}
+
+		/*
 		 * Check again (with lock) if APM event has been cleared or handled. A race
 		 * condition may allow multiple threads to pass the quick check.
 		 */
-		if (((psSGXHostCtl->ui32InterruptClearFlags & PVRSRV_USSE_EDM_INTERRUPT_ACTIVE_POWER) != 0) ||
-			((psSGXHostCtl->ui32InterruptFlags & PVRSRV_USSE_EDM_INTERRUPT_ACTIVE_POWER) == 0))
+		if (((psSGXHostCtl->ui32InterruptClearFlags & PVRSRV_USSE_EDM_INTERRUPT_ACTIVE_POWER) == 0) &&
+			((psSGXHostCtl->ui32InterruptFlags & PVRSRV_USSE_EDM_INTERRUPT_ACTIVE_POWER) != 0))
 		{
-			PVRSRVPowerUnlock(ui32CallerID);
-			return;
-		}
+			/* Microkernel is idle and is requesting to be powered down. */
+			psSGXHostCtl->ui32InterruptClearFlags |= PVRSRV_USSE_EDM_INTERRUPT_ACTIVE_POWER;
 
-		/* Microkernel is idle and is requesting to be powered down. */
-		psSGXHostCtl->ui32InterruptClearFlags |= PVRSRV_USSE_EDM_INTERRUPT_ACTIVE_POWER;
-
-		/* Suspend pdumping. */
-		PDUMPSUSPEND();
+			/* Suspend pdumping. */
+			PDUMPSUSPEND();
 
 #if defined(SYS_CUSTOM_POWERDOWN)
-		/*
-		 	Some power down code cannot be executed inside an MISR on
-		 	some platforms that use mutexes inside the power code.
-		 */
-		eError = SysPowerDownMISR(psDeviceNode, ui32CallerID);
+			/*
+				Some power down code cannot be executed inside an MISR on
+				some platforms that use mutexes inside the power code.
+			 */
+			eError = SysPowerDownMISR(psDeviceNode, ui32CallerID);
 #else
-		eError = PVRSRVSetDevicePowerStateKM(psDeviceNode->sDevId.ui32DeviceIndex,
-											 PVRSRV_DEV_POWER_STATE_OFF);
-		if (eError == PVRSRV_OK)
-		{
-			SGXPostActivePowerEvent(psDeviceNode, ui32CallerID);
-		}
+			eError = PVRSRVSetDevicePowerStateKM(psDeviceNode->sDevId.ui32DeviceIndex,
+								PVRSRV_DEV_POWER_STATE_OFF);
 #endif
-		PVRSRVPowerUnlock(ui32CallerID);
+			if (eError == PVRSRV_OK)
+			{
+				SGXPostActivePowerEvent(psDeviceNode, ui32CallerID);
+			}
+			/* Resume pdumping */
+			PDUMPRESUME();
+		}
 
-		/* Resume pdumping */
-		PDUMPRESUME();
+		PVRSRVPowerUnlock(ui32CallerID);
 	}
 
 	if (eError != PVRSRV_OK)
@@ -287,7 +287,11 @@ PVRSRV_ERROR SGXScheduleCCBCommand(PVRSRV_DEVICE_NODE	*psDeviceNode,
 #if defined(PDUMP)
 	IMG_VOID *pvDumpCommand;
 	IMG_BOOL bPDumpIsSuspended = PDumpIsSuspended();
-	IMG_BOOL bPersistentProcess = IMG_FALSE;
+#if defined(SUPPORT_PDUMP_MULTI_PROCESS)
+	IMG_BOOL bPDumpActive = _PDumpIsProcessActive();
+#else
+	IMG_BOOL bPDumpActive = IMG_TRUE;
+#endif
 #else
 	PVR_UNREFERENCED_PARAMETER(ui32CallerID);
 	PVR_UNREFERENCED_PARAMETER(ui32PDumpFlags);
@@ -425,20 +429,6 @@ PVRSRV_ERROR SGXScheduleCCBCommand(PVRSRV_DEVICE_NODE	*psDeviceNode,
 		}
 	}
 #endif
-#if defined(PDUMP)
-	/*
-	 *	For persistent processes, the HW kicks should not go into the
-	 *	extended init phase; only keep memory transactions from the
-	 *	window system which are necessary to run the client app.
-	 */
-	{
-		PVRSRV_PER_PROCESS_DATA* psPerProc = PVRSRVFindPerProcessData();
-		if(psPerProc != IMG_NULL)
-		{
-			bPersistentProcess = psPerProc->bPDumpPersistent;
-		}
-	}
-#endif /* PDUMP */
 	psKernelCCB = psDevInfo->psKernelCCBInfo;
 
 	psSGXCommand = SGXAcquireKernelCCBSlot(psKernelCCB);
@@ -499,7 +489,7 @@ PVRSRV_ERROR SGXScheduleCCBCommand(PVRSRV_DEVICE_NODE	*psDeviceNode,
 
 #if defined(PDUMP)
 	if ((ui32CallerID != ISR_ID) && (bPDumpIsSuspended == IMG_FALSE) &&
-		(bPersistentProcess == IMG_FALSE) )
+		(bPDumpActive == IMG_TRUE) )
 	{
 		/* Poll for space in the CCB. */
 		PDUMPCOMMENTWITHFLAGS(ui32PDumpFlags, "Poll for space in the Kernel CCB\r\n");
@@ -562,7 +552,7 @@ PVRSRV_ERROR SGXScheduleCCBCommand(PVRSRV_DEVICE_NODE	*psDeviceNode,
 
 #if defined(PDUMP)
 	if ((ui32CallerID != ISR_ID) && (bPDumpIsSuspended == IMG_FALSE) &&
-		(bPersistentProcess == IMG_FALSE) )
+		(bPDumpActive == IMG_TRUE) )
 	{
 	#if defined(FIX_HW_BRN_26620) && defined(SGX_FEATURE_SYSTEM_CACHE) && !defined(SGX_BYPASS_SYSTEM_CACHE)
 		PDUMPCOMMENTWITHFLAGS(ui32PDumpFlags, "Poll for previous Kernel CCB CMD to be read\r\n");
@@ -608,10 +598,11 @@ PVRSRV_ERROR SGXScheduleCCBCommand(PVRSRV_DEVICE_NODE	*psDeviceNode,
 	*psDevInfo->pui32KernelCCBEventKicker = (*psDevInfo->pui32KernelCCBEventKicker + 1) & 0xFF;
 
 	/*
-	 * New command submission is considered a proper handling of any pending APM
-	 * event, so mark it as handled to prevent other host threads from taking
-	 * action.
+	 * New command submission is considered a proper handling of any pending
+	 * IDLE or APM event, so mark them as handled to prevent other host threads
+	 * from taking action.
 	 */
+	psSGXHostCtl->ui32InterruptClearFlags |= PVRSRV_USSE_EDM_INTERRUPT_IDLE;
 	psSGXHostCtl->ui32InterruptClearFlags |= PVRSRV_USSE_EDM_INTERRUPT_ACTIVE_POWER;
 
 	OSWriteMemoryBarrier();
@@ -673,6 +664,7 @@ PVRSRV_ERROR SGXScheduleCCBCommandKM(PVRSRV_DEVICE_NODE		*psDeviceNode,
 									 IMG_BOOL				bLastInScene)
 {
 	PVRSRV_ERROR	eError;
+	PVRSRV_SGXDEV_INFO	*psDevInfo = psDeviceNode->pvDevice;
 
 	eError = PVRSRVPowerLock(ui32CallerID, IMG_FALSE);
 	if (eError == PVRSRV_ERROR_RETRY)
@@ -722,10 +714,14 @@ PVRSRV_ERROR SGXScheduleCCBCommandKM(PVRSRV_DEVICE_NODE		*psDeviceNode,
 	}
 	else
 	{
-		PVR_DPF((PVR_DBG_ERROR,"SGXScheduleCCBCommandKM failed to acquire lock - "
+		PVR_DPF((PVR_DBG_ERROR,"SGXScheduleCCBCommandKM failed to power up device - "
 				 "ui32CallerID:%d eError:%u", ui32CallerID, eError));
+		PVRSRVPowerUnlock(ui32CallerID);
 		return eError;
 	}
+
+	SysSGXCommandPending(psDevInfo->bSGXIdle);
+	psDevInfo->bSGXIdle = IMG_FALSE;
 
 	eError = SGXScheduleCCBCommand(psDeviceNode, eCmdType, psCommandData, ui32CallerID, ui32PDumpFlags, hDevMemContext, bLastInScene);
 
@@ -748,9 +744,17 @@ PVRSRV_ERROR SGXScheduleProcessQueuesKM(PVRSRV_DEVICE_NODE *psDeviceNode)
 {
 	PVRSRV_ERROR 		eError;
 	PVRSRV_SGXDEV_INFO 	*psDevInfo = psDeviceNode->pvDevice;
-	SGXMKIF_HOST_CTL	*psHostCtl = psDevInfo->psKernelSGXHostCtlMemInfo->pvLinAddrKM;
+	SGXMKIF_HOST_CTL	*psHostCtl;
 	IMG_UINT32			ui32PowerStatus;
 	SGXMKIF_COMMAND		sCommand = {0};
+
+	if (psDevInfo->psKernelSGXHostCtlMemInfo == IMG_NULL)
+	{
+		/* Part2 hasn't run yet, we can't do anything */
+		return PVRSRV_OK;
+	}
+
+	psHostCtl = psDevInfo->psKernelSGXHostCtlMemInfo->pvLinAddrKM;
 
 	ui32PowerStatus = psHostCtl->ui32PowerStatus;
 	if ((ui32PowerStatus & PVRSRV_USSE_EDM_POWMAN_NO_WORK) != 0)
@@ -807,11 +811,7 @@ IMG_BOOL SGXIsDevicePowered(PVRSRV_DEVICE_NODE *psDeviceNode)
 ******************************************************************************/
 IMG_EXPORT
 PVRSRV_ERROR SGXGetInternalDevInfoKM(IMG_HANDLE hDevCookie,
-#if defined (SUPPORT_SID_INTERFACE)
-									SGX_INTERNAL_DEVINFO_KM *psSGXInternalDevInfo)
-#else
 									SGX_INTERNAL_DEVINFO *psSGXInternalDevInfo)
-#endif
 {
 	PVRSRV_SGXDEV_INFO *psDevInfo = (PVRSRV_SGXDEV_INFO *)((PVRSRV_DEVICE_NODE *)hDevCookie)->pvDevice;
 
@@ -1090,6 +1090,7 @@ IMG_HANDLE SGXRegisterHWRenderContextKM(IMG_HANDLE				hDeviceNode,
     IMG_UINT8 *pSrc;
     IMG_UINT8 *pDst;
 	PRESMAN_ITEM psResItem;
+	IMG_UINT32 ui32PDDevPAddrInDirListFormat;
 
 	eError = OSAllocMem(PVRSRV_OS_PAGEABLE_HEAP,
 						sizeof(SGX_HW_RENDER_CONTEXT_CLEANUP),
@@ -1155,17 +1156,23 @@ IMG_HANDLE SGXRegisterHWRenderContextKM(IMG_HANDLE				hDeviceNode,
     psMMUContext = BM_GetMMUContextFromMemContext(hDevMemContextInt);
     sPDDevPAddr = psDeviceNode->pfnMMUGetPDDevPAddr(psMMUContext);
 
+	/* 
+	   The PDDevPAddr needs to be shifted-down, as the uKernel expects it in the
+	   format it will be inserted into the DirList registers in.
+	*/
+	ui32PDDevPAddrInDirListFormat = (IMG_UINT32)(sPDDevPAddr.uiAddr >> SGX_MMU_PTE_ADDR_ALIGNSHIFT);
+
     /* 
        patch-in the Page-Directory Device-Physical address. Note that this is
        copied-in one byte at a time, as we have no guarantee that the usermode-
        provided ui32OffsetToPDDevPAddr is a validly-aligned address for the
        current CPU architecture.
      */
-    pSrc = (IMG_UINT8 *)&sPDDevPAddr;
+	pSrc = (IMG_UINT8 *)&ui32PDDevPAddrInDirListFormat;
     pDst = (IMG_UINT8 *)psCleanup->psHWRenderContextMemInfo->pvLinAddrKM;
     pDst += ui32OffsetToPDDevPAddr;
 
-    for (iPtrByte = 0; iPtrByte < sizeof(IMG_DEV_PHYADDR); iPtrByte++)
+    for (iPtrByte = 0; iPtrByte < sizeof(ui32PDDevPAddrInDirListFormat); iPtrByte++)
     {
         pDst[iPtrByte] = pSrc[iPtrByte];
     }
@@ -1270,6 +1277,7 @@ IMG_HANDLE SGXRegisterHWTransferContextKM(IMG_HANDLE				hDeviceNode,
     IMG_UINT8 *pSrc;
     IMG_UINT8 *pDst;
 	PRESMAN_ITEM psResItem;
+	IMG_UINT32 ui32PDDevPAddrInDirListFormat;
 
 	eError = OSAllocMem(PVRSRV_OS_PAGEABLE_HEAP,
 						sizeof(SGX_HW_TRANSFER_CONTEXT_CLEANUP),
@@ -1286,6 +1294,7 @@ IMG_HANDLE SGXRegisterHWTransferContextKM(IMG_HANDLE				hDeviceNode,
 	psDevMemoryInfo = &psDeviceNode->sDevMemoryInfo;
     psHeapInfo = &psDevMemoryInfo->psDeviceMemoryHeap[SGX_KERNEL_DATA_HEAP_ID];
 
+	PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "Allocate HW Transfer context");
     eError = PVRSRVAllocDeviceMemKM(hDeviceNode,
                                psPerProc,
                                psHeapInfo->hDevMemHeap,
@@ -1335,17 +1344,23 @@ IMG_HANDLE SGXRegisterHWTransferContextKM(IMG_HANDLE				hDeviceNode,
     psMMUContext = BM_GetMMUContextFromMemContext(hDevMemContextInt);
     sPDDevPAddr = psDeviceNode->pfnMMUGetPDDevPAddr(psMMUContext);
 
+	/* 
+	   The PDDevPAddr needs to be shifted-down, as the uKernel expects it in the
+	   format it will be inserted into the DirList registers in.
+	*/
+	ui32PDDevPAddrInDirListFormat = (IMG_UINT32)(sPDDevPAddr.uiAddr >> SGX_MMU_PTE_ADDR_ALIGNSHIFT);
+
     /* 
        patch-in the Page-Directory Device-Physical address. Note that this is
        copied-in one byte at a time, as we have no guarantee that the usermode-
        provided ui32OffsetToPDDevPAddr is a validly-aligned address for the
        current CPU architecture.
      */
-    pSrc = (IMG_UINT8 *)&sPDDevPAddr;
+	pSrc = (IMG_UINT8 *)&ui32PDDevPAddrInDirListFormat;
     pDst = (IMG_UINT8 *)psCleanup->psHWTransferContextMemInfo->pvLinAddrKM;
     pDst += ui32OffsetToPDDevPAddr;
 
-    for (iPtrByte = 0; iPtrByte < sizeof(IMG_DEV_PHYADDR); iPtrByte++)
+    for (iPtrByte = 0; iPtrByte < sizeof(ui32PDDevPAddrInDirListFormat); iPtrByte++)
     {
         pDst[iPtrByte] = pSrc[iPtrByte];
     }
@@ -1603,6 +1618,7 @@ IMG_HANDLE SGXRegisterHW2DContextKM(IMG_HANDLE				hDeviceNode,
     IMG_UINT8 *pSrc;
     IMG_UINT8 *pDst;
 	PRESMAN_ITEM psResItem;
+	IMG_UINT32 ui32PDDevPAddrInDirListFormat;
 
 	eError = OSAllocMem(PVRSRV_OS_PAGEABLE_HEAP,
 						sizeof(SGX_HW_2D_CONTEXT_CLEANUP),
@@ -1667,17 +1683,23 @@ IMG_HANDLE SGXRegisterHW2DContextKM(IMG_HANDLE				hDeviceNode,
     psMMUContext = BM_GetMMUContextFromMemContext(hDevMemContextInt);
     sPDDevPAddr = psDeviceNode->pfnMMUGetPDDevPAddr(psMMUContext);
 
+	/* 
+	   The PDDevPAddr needs to be shifted-down, as the uKernel expects it in the
+	   format it will be inserted into the DirList registers in.
+	*/
+	ui32PDDevPAddrInDirListFormat = sPDDevPAddr.uiAddr >> SGX_MMU_PTE_ADDR_ALIGNSHIFT;
+
     /* 
        patch-in the Page-Directory Device-Physical address. Note that this is
        copied-in one byte at a time, as we have no guarantee that the usermode-
        provided ui32OffsetToPDDevPAddr is a validly-aligned address for the
        current CPU architecture.
      */
-    pSrc = (IMG_UINT8 *)&sPDDevPAddr;
+	pSrc = (IMG_UINT8 *)&ui32PDDevPAddrInDirListFormat;
     pDst = (IMG_UINT8 *)psCleanup->psHW2DContextMemInfo->pvLinAddrKM;
     pDst += ui32OffsetToPDDevPAddr;
 
-    for (iPtrByte = 0; iPtrByte < sizeof(IMG_DEV_PHYADDR); iPtrByte++)
+    for (iPtrByte = 0; iPtrByte < sizeof(ui32PDDevPAddrInDirListFormat); iPtrByte++)
     {
         pDst[iPtrByte] = pSrc[iPtrByte];
     }
@@ -1846,8 +1868,8 @@ PVRSRV_ERROR SGX2DQueryBlitsCompleteKM(PVRSRV_SGXDEV_INFO	*psDevInfo,
 	{
 		PVRSRV_SYNC_DATA *psSyncData = psSyncInfo->psSyncData;
 
-		PVR_TRACE(("SGX2DQueryBlitsCompleteKM: Syncinfo: 0x%x, Syncdata: 0x%x",
-				(IMG_UINTPTR_T)psSyncInfo, (IMG_UINTPTR_T)psSyncData));
+		PVR_TRACE(("SGX2DQueryBlitsCompleteKM: Syncinfo: 0x%p, Syncdata: 0x%p",
+				psSyncInfo, psSyncData));
 
 		PVR_TRACE(("SGX2DQueryBlitsCompleteKM: Read ops complete: %d, Read ops pending: %d", psSyncData->ui32ReadOpsComplete, psSyncData->ui32ReadOpsPending));
 		PVR_TRACE(("SGX2DQueryBlitsCompleteKM: Write ops complete: %d, Write ops pending: %d", psSyncData->ui32WriteOpsComplete, psSyncData->ui32WriteOpsPending));
