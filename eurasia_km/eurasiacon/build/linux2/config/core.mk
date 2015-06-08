@@ -461,6 +461,7 @@ $(eval $(call KernelConfigC,PVR_LINUX_MEM_AREA_POOL_MAX_PAGES,$(PVR_LINUX_MEM_AR
 $(eval $(call TunableKernelConfigC,PVR_LINUX_MEM_AREA_USE_VMAP,))
 $(eval $(call TunableKernelConfigC,PVR_LINUX_MEM_AREA_POOL_ALLOW_SHRINK,))
 
+$(eval $(call TunableKernelConfigC,TRUNCATE_SGX_HWRECOVERY_DUMP,))
 $(eval $(call TunableKernelConfigC,FLIP_TECHNIQUE_FRAMEBUFFER,))
 $(eval $(call TunableKernelConfigC,FLIP_TECHNIQUE_OVERLAY,))
 

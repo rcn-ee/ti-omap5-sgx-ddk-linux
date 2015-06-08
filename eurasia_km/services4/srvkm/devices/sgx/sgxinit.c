@@ -1275,6 +1275,11 @@ IMG_VOID SGXDumpDebugInfo (PVRSRV_SGXDEV_INFO	*psDevInfo,
 
 	PVR_LOG(("SGX debug (%s)", PVRVERSION_STRING));
 
+#if defined (TRUNCATE_SGX_HWRECOVERY_DUMP)
+	PVR_LOG(("Truncating SGX HW recovery traces"));
+	return;
+#endif
+
 	if (bDumpSGXRegs)
 	{
 		PVR_DPF((PVR_DBG_ERROR,"SGX Register Base Address (Linear):   0x%08X", (IMG_UINTPTR_T)psDevInfo->pvRegsBaseKM));
