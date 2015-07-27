@@ -89,8 +89,6 @@ endif
 # present the frames to the display in the 3PDD
 FLIP_TECHNIQUE_FRAMEBUFFER := 1
 
-TRUNCATE_SGX_HWRECOVERY_DUMP := 1
-
 OPTIM := -Os
 
 SYS_CFLAGS := -march=armv7-a
