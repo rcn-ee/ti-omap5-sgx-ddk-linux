@@ -584,6 +584,8 @@ PVRMMapOSMemHandleToMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
 			/*DRM core will take care of it, eventually.    */
 			buf = NULL;
 		}
+		/* drop reference from allocate - handle holds it now */
+		drm_gem_object_unreference_unlocked(buf);
 	    }
             if (!buf)
             {
@@ -600,6 +602,9 @@ PVRMMapOSMemHandleToMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
 			eError = PVRSRV_ERROR_OUT_OF_MEMORY;
 			goto exit_unlock;
 		}
+		/* drop reference from allocate - handle holds it now */
+		drm_gem_object_unreference_unlocked(buf);
+
 	}
     }
 #endif /* SUPPORT_DRI_DRM_EXTERNAL */
