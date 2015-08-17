@@ -532,6 +532,7 @@ $(eval $(call TunableBothConfigC,SUPPORT_ION,))
 $(eval $(call TunableBothConfigC,SUPPORT_HWRECOVERY_TRACE_LIMIT,))
 $(eval $(call TunableBothConfigC,SUPPORT_PVRSRV_GET_DC_SYSTEM_BUFFER,1))
 $(eval $(call TunableBothConfigC,SUPPORT_NV12_FROM_2_HWADDRS,))
+$(eval $(call TunableBothConfigC,PM_RUNTIME_SUPPORT,))
 
 $(eval $(call TunableKernelConfigC,SUPPORT_LINUX_X86_WRITECOMBINE,1))
 $(eval $(call TunableKernelConfigC,SUPPORT_LINUX_X86_PAT,1))

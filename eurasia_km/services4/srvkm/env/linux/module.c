@@ -47,6 +47,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 #endif
 
+#ifndef CONFIG_RESET_CONTROLLER
+#include <linux/platform_data/sgx-omap.h>
+#endif
+
 #if defined(SUPPORT_DRI_DRM) && !defined(SUPPORT_DRI_DRM_EXTERNAL)
 #define	PVR_MOD_STATIC
 #else
@@ -150,7 +154,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define DEVNAME                PVRSRV_MODNAME
 #else
 #if defined(PVR_LDM_MODULE)
-#define	DRVNAME		PVR_LDM_DRIVER_REGISTRATION_NAME
+//#define	DRVNAME		PVR_LDM_DRIVER_REGISTRATION_NAME
+#define DRVNAME		PVRSRV_MODNAME
 #endif
 #define DEVNAME		PVRSRV_MODNAME
 MODULE_SUPPORTED_DEVICE(DEVNAME);
@@ -244,6 +249,11 @@ static int PVRSRVDriverProbe(LDM_DEV *device);
 static void PVRSRVDriverRemove(LDM_DEV *device);
 static int PVRSRVDriverProbe(LDM_DEV *device, const struct pci_device_id *id);
 #endif
+#if !defined(SUPPORT_DRI_DRM_EXTERNAL)
+static int PVRSRVDriverSuspend(LDM_DEV *device, pm_message_t state);
+static void PVRSRVDriverShutdown(LDM_DEV *device);
+static int PVRSRVDriverResume(LDM_DEV *device);
+#endif
 
 #if defined(PVR_LDM_PCI_MODULE)
 /* This structure is used by the Linux module code */
@@ -268,7 +278,8 @@ static struct platform_device_id powervr_id_table[] = {
 #if defined(SUPPORT_DRI_DRM_EXTERNAL) || !defined(SUPPORT_DRI_DRM)
 #ifdef CONFIG_OF
 static const struct of_device_id omap_gpu_id_table[] = {
-        { .compatible = "ti,omap4-gpu" },
+        //{ .compatible = "ti,omap4-gpu" },
+        { .compatible = "ti,sgx" },
         {}
 };
 MODULE_DEVICE_TABLE(of, omap_gpu_id_table);
@@ -304,8 +315,16 @@ static LDM_DRV powervr_driver = {
 
 LDM_DEV *gpsPVRLDMDev;
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,11,0))
+#ifdef CONFIG_RESET_CONTROLLER
+struct reset_control *rstc;
+bool already_deasserted = false;
+#endif
+#endif
+
 #if defined(MODULE) && defined(PVR_LDM_PLATFORM_MODULE) && \
 	!defined(PVR_USE_PRE_REGISTERED_PLATFORM_DEV)
+#if !defined(PM_RUNTIME_SUPPORT)
 static void PVRSRVDeviceRelease(struct device unref__ *pDevice)
 {
 }
@@ -317,6 +336,7 @@ static struct platform_device powervr_device = {
 		.release	= PVRSRVDeviceRelease
 	}
 };
+#endif
 #endif
 
 /*!
@@ -343,8 +363,51 @@ static int __devinit PVRSRVDriverProbe(LDM_DEV *pDevice, const struct pci_device
 #endif
 {
 	SYS_DATA *psSysData;
+	int ret;
+	struct device *dev = &pDevice->dev;
+	struct gfx_sgx_platform_data *pdata = dev->platform_data;
 
 	PVR_TRACE(("PVRSRVDriverProbe(pDevice=%p) (%s)", pDevice, pDevice->name));
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,11,0))
+#ifdef CONFIG_RESET_CONTROLLER
+	rstc = reset_control_get(&pDevice->dev, NULL);
+	if (IS_ERR(rstc))
+	{
+		dev_err(&pDevice->dev, "%s: error: reset_control_get\n", __func__);
+		return PTR_ERR(rstc);
+	}
+
+	ret = reset_control_clear_reset(rstc);
+
+	if (ret < 0)
+	{
+		dev_err(dev, "%s: error: reset_control_clear_reset\n", __func__);
+		return ret;
+	}
+
+	ret = reset_control_deassert(rstc);
+
+	if (ret == -EEXIST)
+	{
+		already_deasserted = true;
+	}
+	else if (ret < 0)
+	{
+		dev_err(dev, "%s: error: reset_control_deassert\n", __func__);
+		return ret;
+	}
+#else
+	if (pdata && pdata->deassert_reset) {
+		ret = pdata->deassert_reset(pDevice, pdata->reset_name);
+		if (ret) {
+			dev_err(dev, "Unable to reset SGX!\n");
+		}
+	} else {
+		dev_err(dev, "SGX Platform data missing deassert_reset!\n");
+		return -ENODEV;
+	}
+#endif  /* CONFIG_RESET_CONTROLLER */
+#endif
 
 #if 0   /* INTEGRATION_POINT */
 	/* Some systems require device-specific system initialisation.
@@ -377,7 +440,19 @@ static int __devinit PVRSRVDriverProbe(LDM_DEV *pDevice, const struct pci_device
 			return -ENODEV;
 		}
 	}
-
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,11,0))
+#ifdef CONFIG_RESET_CONTROLLER
+        if (!already_deasserted)
+        {
+                ret = reset_control_is_reset(rstc);
+                if (ret <= 0)
+                {
+                        PVR_DPF((PVR_DBG_MESSAGE, "reset control reset"));
+                }
+        }
+        reset_control_put(rstc);
+#endif /* CONFIG_RESET_CONTROLLER */
+#endif
 #if defined(CONFIG_ION_OMAP)
 	gpsIONClient = ion_client_create(omap_ion_device,
 									 1 << ION_HEAP_TYPE_CARVEOUT |
