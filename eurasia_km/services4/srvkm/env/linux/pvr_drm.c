@@ -502,6 +502,8 @@ static int __init PVRSRVDrmInit(void)
 	sPVRDrmDriver.num_ioctls = pvr_max_ioctl;
 #endif
 
+	PVR_TRACE(("PVRSRVDrmInit"));
+
 	PVRDPFInit();
 
 #if defined(PVR_DRI_DRM_NOT_PCI)
