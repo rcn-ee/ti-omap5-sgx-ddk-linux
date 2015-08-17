@@ -1913,6 +1913,8 @@ ErrorExitPhase1:
 	return eError;
 }
 
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+
 struct async_unmap_data {
 	PVRSRV_KERNEL_MEM_INFO *psMemInfo;
 	IMG_UINT32 ui32PID;
@@ -1932,6 +1934,8 @@ static void async_unmap(void *arg)
 	kfree(data);
 }
 
+#endif
+
 /*!
 ******************************************************************************
 
@@ -1949,12 +1953,19 @@ IMG_EXPORT
 PVRSRV_ERROR IMG_CALLCONV PVRSRVUnmapDeviceMemoryKM (PVRSRV_KERNEL_MEM_INFO *psMemInfo,
 		PVRSRV_PER_PROCESS_DATA *psPerProc)
 {
+
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+
 	struct drm_gem_object *buf;
+
+#endif
 
 	if (!psMemInfo)
 	{
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
+
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
 
 	buf = BM_GetGEM(psMemInfo->sMemBlk.hBuffer);
 	if (buf)
@@ -1979,6 +1990,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVUnmapDeviceMemoryKM (PVRSRV_KERNEL_MEM_INFO *psM
 		/* otherwise fallthru and delete immediately! */
 	}
 
+#endif
 	return ResManFreeResByPtr(psMemInfo->sMemBlk.hResItem, CLEANUP_WITH_POLL);
 }
 

@@ -550,8 +550,10 @@ PVRMMapOSMemHandleToMMapData(PVRSRV_PER_PROCESS_DATA *psPerProc,
     }
 
     psLinuxMemArea = (LinuxMemArea *)hOSMemHandle;
-    puiHandle = &psLinuxMemArea->uiHandle;
 
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
+    puiHandle = &psLinuxMemArea->uiHandle;
+#endif
         /* Sparse mappings have to ask the BM for the virtual size */
 	if (psLinuxMemArea->hBMHandle)
 	{

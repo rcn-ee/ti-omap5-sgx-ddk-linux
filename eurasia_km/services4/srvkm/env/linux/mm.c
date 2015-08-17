@@ -1778,8 +1778,8 @@ LinuxMemAreaStructAlloc(IMG_VOID)
 static IMG_VOID
 LinuxMemAreaStructFree(LinuxMemArea *psLinuxMemArea)
 {
-	struct page **pages = NULL;
 #if defined(SUPPORT_DRI_DRM_EXTERNAL)
+	struct page **pages = NULL;
 	if (psLinuxMemArea->buf){
 #define OMAP_BO_EXT_MEM		0x04000000	/* externally allocated memory */
 		if(omap_gem_flags(psLinuxMemArea->buf) & OMAP_BO_EXT_MEM){
