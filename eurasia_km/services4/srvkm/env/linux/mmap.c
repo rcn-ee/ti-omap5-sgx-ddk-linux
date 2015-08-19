@@ -1061,7 +1061,9 @@ MMapVOpen(struct vm_area_struct* ps_vma)
 static IMG_VOID
 MMapVCloseNoLock(struct vm_area_struct* ps_vma, PKV_OFFSET_STRUCT psOffsetStruct)
 {
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
     struct drm_gem_object *obj;
+#endif
 
     WARN_ON(!psOffsetStruct);
     if (!psOffsetStruct) {
@@ -1090,9 +1092,10 @@ MMapVCloseNoLock(struct vm_area_struct* ps_vma, PKV_OFFSET_STRUCT psOffsetStruct
 	DestroyOffsetStruct(psOffsetStruct);
     }
 
+#if defined(SUPPORT_DRI_DRM_EXTERNAL)
     obj = ps_vma->vm_private_data;
     drm_gem_object_unreference(obj);
-
+#endif
     ps_vma->vm_private_data = NULL;
 }
 
