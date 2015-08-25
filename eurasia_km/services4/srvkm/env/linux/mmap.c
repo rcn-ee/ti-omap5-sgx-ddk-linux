@@ -1059,10 +1059,6 @@ MMapVOpen(struct vm_area_struct* ps_vma)
 static IMG_VOID
 MMapVCloseNoLock(struct vm_area_struct* ps_vma, PKV_OFFSET_STRUCT psOffsetStruct)
 {
-#if defined(SUPPORT_DRI_DRM_EXTERNAL)
-    struct drm_gem_object *obj;
-#endif
-
     WARN_ON(!psOffsetStruct);
     if (!psOffsetStruct) {
         return;
@@ -1090,11 +1086,6 @@ MMapVCloseNoLock(struct vm_area_struct* ps_vma, PKV_OFFSET_STRUCT psOffsetStruct
 	DestroyOffsetStruct(psOffsetStruct);
     }
 
-#if defined(SUPPORT_DRI_DRM_EXTERNAL)
-    obj = ps_vma->vm_private_data;
-    drm_gem_object_unreference(obj);
-#endif
-    ps_vma->vm_private_data = NULL;
 }
 
 /*
@@ -1381,7 +1372,7 @@ MMapVOpenExt(struct vm_area_struct* ps_vma)
 			FindOffsetStructByPID(priv, OSGetCurrentProcessIDKM());
 	if (WARN_ON(!psOffsetStruct))
 		return;
-	LinuxLockMutex(&g_sMMapMutex);
+	LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 	MMapVOpenNoLock(ps_vma, psOffsetStruct);
 	LinuxUnLockMutex(&g_sMMapMutex);
 }
@@ -1395,8 +1386,12 @@ MMapVCloseExt(struct vm_area_struct* ps_vma)
 			FindOffsetStructByPID(priv, OSGetCurrentProcessIDKM());
 	if (WARN_ON(!psOffsetStruct))
 		return;
-	LinuxLockMutex(&g_sMMapMutex);
+	LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 	MMapVCloseNoLock(ps_vma, psOffsetStruct);
+
+	drm_gem_vm_close(ps_vma);
+	ps_vma->vm_private_data = NULL;
+
 	LinuxUnLockMutex(&g_sMMapMutex);
 }
 
@@ -1419,7 +1414,7 @@ PVRMMapExt(struct file* pFile, struct vm_area_struct* ps_vma)
 
     PVR_UNREFERENCED_PARAMETER(pFile);
 
-    LinuxLockMutex(&g_sMMapMutex);
+    LinuxLockMutexNested(&g_sMMapMutex, PVRSRV_LOCK_CLASS_MMAP);
 
     ui32ByteSize = ps_vma->vm_end - ps_vma->vm_start;
 
