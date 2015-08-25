@@ -62,6 +62,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #  include <omap_drv.h>
 #endif
 
+#if defined(CONFIG_OUTER_CACHE)
+#include "asm/outercache.h"
+#endif
+
 IMG_UINT32	g_ui32InitFlags;
 
 /* mark which parts of Services were initialised */
