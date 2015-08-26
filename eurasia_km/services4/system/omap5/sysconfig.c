@@ -210,13 +210,22 @@ static PVRSRV_ERROR SysLocateDevices(SYS_DATA *psSysData)
 		PVR_DPF((PVR_DBG_ERROR, "%s: platform_get_irq failed (%d)", __FUNCTION__, -dev_irq));
 		return PVRSRV_ERROR_INVALID_DEVICE;
 	}
-	
+
+#if 0
 	gsSGXDeviceMap.sRegsSysPBase.uiAddr = dev_res->start;
+#else
+	gsSGXDeviceMap.sRegsSysPBase.uiAddr = SYS_OMAP5430_SGX_REGS_SYS_PHYS_BASE;
+#endif
+
 	gsSGXDeviceMap.sRegsCpuPBase =
 		SysSysPAddrToCpuPAddr(gsSGXDeviceMap.sRegsSysPBase);
 	PVR_TRACE(("SGX register base: 0x%lx", (unsigned long)gsSGXDeviceMap.sRegsCpuPBase.uiAddr));
 
+#if 0
 	gsSGXDeviceMap.ui32RegsSize = (unsigned int)(dev_res->end - dev_res->start);
+#else
+	gsSGXDeviceMap.ui32RegsSize = SYS_OMAP5430_SGX_REGS_SIZE;
+#endif
 	PVR_TRACE(("SGX register size: %d",gsSGXDeviceMap.ui32RegsSize));
 
 	gsSGXDeviceMap.ui32IRQ = dev_irq;
