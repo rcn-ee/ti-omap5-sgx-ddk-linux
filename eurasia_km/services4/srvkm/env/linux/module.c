@@ -278,8 +278,8 @@ static struct platform_device_id powervr_id_table[] = {
 #if defined(SUPPORT_DRI_DRM_EXTERNAL) || !defined(SUPPORT_DRI_DRM)
 #ifdef CONFIG_OF
 static const struct of_device_id omap_gpu_id_table[] = {
-        { .compatible = "ti,am3-sgx530" },
-        { .compatible = "ti,am4-sgx530" },
+        { .compatible = "ti,am335x-sgx530" },
+        { .compatible = "ti,am437x-sgx530" },
         { .compatible = "ti,omap5-sgx544" },
         {}
 };
