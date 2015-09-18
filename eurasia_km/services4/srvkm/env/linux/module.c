@@ -497,6 +497,9 @@ static void __devexit PVRSRVDriverRemove(LDM_DEV *pDevice)
 #endif
 {
 	SYS_DATA *psSysData;
+	int ret;
+	struct device *dev = &pDevice->dev;
+	struct gfx_sgx_platform_data *pdata = dev->platform_data;
 
 	PVR_TRACE(("PVRSRVDriverRemove(pDevice=%p)", pDevice));
 
@@ -517,6 +520,21 @@ static void __devexit PVRSRVDriverRemove(LDM_DEV *pDevice)
 	}
 #endif
 	(void) SysDeinitialise(psSysData);
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,11,0))
+#ifdef CONFIG_RESET_CONTROLLER
+#else
+	if (pdata && pdata->assert_reset) {
+		ret = pdata->assert_reset(pDevice, pdata->reset_name);
+		if (ret) {
+			dev_err(dev, "Unable to reset SGX!\n");
+		}
+	} else {
+		dev_err(dev, "SGX Platform data missing assert_reset!\n");
+		return -ENODEV;
+	}
+#endif /* CONFIG_RESET_CONTROLLER */
+#endif
 
 	gpsPVRLDMDev = IMG_NULL;
 
