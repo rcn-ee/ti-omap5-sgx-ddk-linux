@@ -89,7 +89,12 @@ static PVRSRV_ERROR EnableSGXClocksWrap(SYS_DATA *psSysData)
 #if !defined(SGX_OCP_NO_INT_BYPASS)
 	if(eError == PVRSRV_OK)
 	{
-		OSWriteHWReg(gpvOCPRegsLinAddr, EUR_CR_OCP_SYSCONFIG, 0x14);
+		/*
+		 * The CPU is not able to configure the SGX clocks and power domain
+		 * when OCP_SYSCONFIG is set to 0x14 (idle_mode = 1, standby_mode = 1).
+		 * Just keep the default value (0x28)(idle_mode = 2, standby_mode = 2).
+		 */
+		//OSWriteHWReg(gpvOCPRegsLinAddr, EUR_CR_OCP_SYSCONFIG, 0x14);
 		OSWriteHWReg(gpvOCPRegsLinAddr, EUR_CR_OCP_DEBUG_CONFIG, EUR_CR_OCP_DEBUG_CONFIG_THALIA_INT_BYPASS_MASK);
 	}
 #endif
