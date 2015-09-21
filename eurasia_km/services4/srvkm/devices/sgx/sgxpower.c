@@ -367,15 +367,8 @@ PVRSRV_ERROR SGXPrePowerState (IMG_HANDLE				hDevHandle,
 					MAKEUNIQUETAG(psDevInfo->psKernelSGXHostCtlMemInfo));
 		#endif /* PDUMP */
 
-		#if 0
-		/* FIXME:
-		 * There seems to be missing interrupt at the end of demo program.
-		 * g_ui32HostIRQCountSample is assigned to psDevInfo->psSGXHostCtl->ui32InterruptCount.
-		 * They will be differnt unless there is an ISR triggered by UM during the tear dowm time.
-		 * Disable this check until further investigation
-		 */
 		/* Wait for the pending ukernel to host interrupts to come back. */
-		#if !defined(NO_HARDWARE)
+		#if !defined(NO_HARDWARE) && defined(SUPPORT_LISR_MISR_SYNC)
 		if (PollForValueKM(&g_ui32HostIRQCountSample,
 							psDevInfo->psSGXHostCtl->ui32InterruptCount,
 							0xffffffff,
@@ -389,7 +382,6 @@ PVRSRV_ERROR SGXPrePowerState (IMG_HANDLE				hDevHandle,
 			PVR_DBG_BREAK;
 		}
 		#endif /* NO_HARDWARE */
-		#endif
 #if defined(SGX_FEATURE_MP)
 		ui32CoresEnabled = ((OSReadHWReg(psDevInfo->pvRegsBaseKM, EUR_CR_MASTER_CORE) & EUR_CR_MASTER_CORE_ENABLE_MASK) >> EUR_CR_MASTER_CORE_ENABLE_SHIFT) + 1;
 #else
