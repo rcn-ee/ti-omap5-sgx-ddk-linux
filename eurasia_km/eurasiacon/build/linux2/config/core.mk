@@ -471,9 +471,6 @@ $(eval $(call BothConfigMake,PVR_SYSTEM,$(PVR_SYSTEM)))
 # Build-type dependent options
 #
 $(eval $(call BothConfigMake,BUILD,$(BUILD)))
-$(eval $(call KernelConfigC,DEBUG_LINUX_MMAP_AREAS,))
-$(eval $(call KernelConfigC,DEBUG_LINUX_MEM_AREAS,))
-$(eval $(call KernelConfigC,DEBUG_LINUX_MEMORY_ALLOCATIONS,))
 $(eval $(call KernelConfigC,PVRSRV_DISABLE_UM_SYNCOBJ_MAPPINGS,1))
 
 ifeq ($(BUILD),debug)
