@@ -382,6 +382,21 @@ create_gem_wrapper(struct drm_device *dev, LinuxMemArea *psLinuxMemArea,
 	int i, npages = PAGE_ALIGN(ui32ByteSize) / PAGE_SIZE;
 	int srcnpages;
 
+	/* map PVR cache type flags to GEM.. */
+	switch(psLinuxMemArea->ui32AreaFlags & PVRSRV_HAP_CACHETYPE_MASK) {
+	case PVRSRV_HAP_CACHED:
+		flags = OMAP_BO_CACHED;
+		break;
+	case PVRSRV_HAP_WRITECOMBINE:
+		flags = OMAP_BO_WC;
+		break;
+	case PVRSRV_HAP_UNCACHED:
+		flags = OMAP_BO_UNCACHED;
+		break;
+	default:
+		PVR_DPF((PVR_DBG_ERROR, "%s: unknown cache type", __FUNCTION__));
+		return NULL;
+	}
 
 	/* from GEM buffer object point of view, we are either mapping
 	 * in terms of an array of struct pages for (potentially)
@@ -452,22 +467,6 @@ create_gem_wrapper(struct drm_device *dev, LinuxMemArea *psLinuxMemArea,
 	default:
 		PVR_DPF((PVR_DBG_ERROR, "%s: Unknown LinuxMemArea type (%d)\n",
 				__FUNCTION__, psLinuxMemArea->eAreaType));
-		return NULL;
-	}
-
-	/* map PVR cache type flags to GEM.. */
-	switch(psLinuxMemArea->ui32AreaFlags & PVRSRV_HAP_CACHETYPE_MASK) {
-	case PVRSRV_HAP_CACHED:
-		flags = OMAP_BO_CACHED;
-		break;
-	case PVRSRV_HAP_WRITECOMBINE:
-		flags = OMAP_BO_WC;
-		break;
-	case PVRSRV_HAP_UNCACHED:
-		flags = OMAP_BO_UNCACHED;
-		break;
-	default:
-		PVR_DPF((PVR_DBG_ERROR, "%s: unknown cache type", __FUNCTION__));
 		return NULL;
 	}
 
