@@ -309,9 +309,12 @@ DebugMemAllocRecordAdd(DEBUG_MEM_ALLOC_TYPE eAllocType,
 {
     DEBUG_MEM_ALLOC_REC *psRecord;
 
-    LinuxLockMutexNested(&g_sDebugMutex, PVRSRV_LOCK_CLASS_MM_DEBUG);
-
     psRecord = kmalloc(sizeof(DEBUG_MEM_ALLOC_REC), GFP_KERNEL);
+    if(psRecord == IMG_NULL) {
+            return;
+    }
+
+    LinuxLockMutexNested(&g_sDebugMutex, PVRSRV_LOCK_CLASS_MM_DEBUG);
 
     psRecord->eAllocType = eAllocType;
     psRecord->pvKey = pvKey;

@@ -1946,16 +1946,21 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVUnmapDeviceMemoryKM (PVRSRV_KERNEL_MEM_INFO *psM
 		PVRSRV_PER_PROCESS_DATA *psPerProc)
 {
 	struct drm_gem_object *buf;
+	struct async_unmap_data *data;
 
 	if (!psMemInfo)
 	{
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 
+	data = kmalloc(sizeof *data, GFP_KERNEL);
+        if(data == IMG_NULL) {
+                return PVRSRV_ERROR_OUT_OF_MEMORY;
+        }
+
 	buf = BM_GetGEM(psMemInfo->sMemBlk.hBuffer);
 	if (buf)
 	{
-		struct async_unmap_data *data = kmalloc(sizeof *data, GFP_KERNEL);
 		int ret;
 
 		/* need to hold a ref to the per-proc, so an exiting/crashing
@@ -1974,6 +1979,8 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVUnmapDeviceMemoryKM (PVRSRV_KERNEL_MEM_INFO *psM
 			return PVRSRV_OK;
 		/* otherwise fallthru and delete immediately! */
 	}
+
+	kfree(data);
 
 	return ResManFreeResByPtr(psMemInfo->sMemBlk.hResItem, CLEANUP_WITH_POLL);
 }

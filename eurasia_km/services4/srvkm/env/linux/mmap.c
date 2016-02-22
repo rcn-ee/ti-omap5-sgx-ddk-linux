@@ -422,6 +422,10 @@ create_gem_wrapper(struct drm_device *dev, LinuxMemArea *psLinuxMemArea,
 		} else {
 			IMG_UINT32 ui32PageIndex = PHYS_TO_PFN(ui32ByteOffset);
 			pages = kmalloc(sizeof(pages) * npages, GFP_KERNEL);
+                        if(pages == IMG_NULL) {
+                                PVR_DPF((PVR_DBG_ERROR, "%s: Could not allocate memory at line (%d)\n", __FUNCTION__, __LINE__));
+                                return NULL;
+                        }
 			for (i = 0; i < npages; i++) {
 				IMG_SYS_PHYADDR SysPAddr =
 						psLinuxMemArea->uData.sExternalKV.uPhysAddr.pSysPhysAddr[ui32PageIndex];
@@ -435,6 +439,10 @@ create_gem_wrapper(struct drm_device *dev, LinuxMemArea *psLinuxMemArea,
 		break;
 	case LINUX_MEM_AREA_VMALLOC:
 		pages = kmalloc(sizeof(pages) * npages, GFP_KERNEL);
+                if(pages == IMG_NULL) {
+		        PVR_DPF((PVR_DBG_ERROR, "%s: Could not allocate memory at line (%d)\n", __FUNCTION__, __LINE__));
+                        return NULL;
+                }
 		for (i = 0; i < npages; i++) {
 			char *vaddr = ((char *)psLinuxMemArea->uData.sVmalloc.pvVmallocAddress) +
 					(i * PAGE_SIZE) + ui32ByteOffset;
@@ -443,6 +451,10 @@ create_gem_wrapper(struct drm_device *dev, LinuxMemArea *psLinuxMemArea,
 		break;
 	case LINUX_MEM_AREA_ALLOC_PAGES:
 		pages = kmalloc(sizeof(pages) * npages, GFP_KERNEL);
+                if(pages == IMG_NULL) {
+		        PVR_DPF((PVR_DBG_ERROR, "%s: Could not allocate memory at line (%d)\n", __FUNCTION__, __LINE__));
+                        return NULL;
+                }
 		/*
 		 * The number of pages allocated at NewAllocPagesLinuxMemArea
 		 * [eurasia_km/services4/srvkm/env/linux/mm.c] is stored in
