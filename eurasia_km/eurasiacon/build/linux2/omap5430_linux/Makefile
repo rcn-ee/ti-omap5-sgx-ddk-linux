@@ -74,6 +74,8 @@ endif
 # system suspend/resume events, and so won't take appropriate action.
 LDM_PLATFORM ?= 1
 
+SUPPORT_ACTIVE_POWER_MANAGEMENT        := 0
+
 ifeq ($(LDM_PLATFORM),1)
 SUPPORT_LINUX_USING_WORKQUEUES := 1
 #DISPLAY_CONTROLLER_COMPONENT += dc_omapdrm_linux
