@@ -655,12 +655,12 @@ static struct platform_driver sPVRPlatDriver =
 static int
 PVRSRVDrmProbe(struct platform_device *pDevice)
 {
-#if (AM_VERSION != 5)
-	struct gfx_sgx_platform_data *pdata = dev->platform_data;
-#endif
 	int ret;
 	struct device *dev = &pDevice->dev;
 	struct drm_device *drm_dev;
+#if (AM_VERSION != 5)
+	struct gfx_sgx_platform_data *pdata = dev->platform_data;
+#endif
 
 	PVR_TRACE(("PVRSRVDrmProbe"));
 
