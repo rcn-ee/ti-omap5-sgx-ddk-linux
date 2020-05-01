@@ -43,13 +43,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if !defined(__SOCCONFIG_H__)
 #define __SOCCONFIG_H__
 
-#if (AM_VERSION == 6)
+#if (VS_PRODUCT_VERSION == 6)
 #include "sysconfig-am6.h"
-#elif (AM_VERSION == 5)
+#elif (VS_PRODUCT_VERSION == 5)
 #include "sysconfig-dra7.h"
-#elif (AM_VERSION == 4)
+#elif (VS_PRODUCT_VERSION == 4)
 #include "sysconfig-am4.h"
-#elif (AM_VERSION == 3)
+#elif (VS_PRODUCT_VERSION == 3)
 #include "sysconfig-am3.h"
 #else
 #error "No TI SoC info in build"
