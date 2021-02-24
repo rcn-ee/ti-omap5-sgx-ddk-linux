@@ -91,13 +91,13 @@ static const IMG_CHAR PVRProcDirRoot[] = "pvr";
 static IMG_INT pvr_proc_open(struct inode *inode,struct file *file);
 static ssize_t pvr_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos);
 
-static struct file_operations pvr_proc_operations =
+static struct proc_ops pvr_proc_operations =
 {
-	.open		= pvr_proc_open,
-	.read		= seq_read,
-	.write		= pvr_proc_write,
-	.llseek		= seq_lseek,
-	.release	= seq_release,
+	.proc_open		= pvr_proc_open,
+	.proc_read		= seq_read,
+	.proc_write		= pvr_proc_write,
+	.proc_lseek		= seq_lseek,
+	.proc_release	= seq_release,
 };
 
 static void *pvr_proc_seq_start (struct seq_file *m, loff_t *pos);
