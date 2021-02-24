@@ -87,7 +87,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/fs.h>
 
 #if defined(SUPPORT_DRI_DRM)
-#include <drm/drmP.h>
+#include <drm/drm_file.h>
+#include <drm/drm_drv.h>
+#include <drm/drm_device.h>
 #if defined(PVR_SECURE_DRM_AUTH_EXPORT)
 #include "env_perproc.h"
 #endif

@@ -49,7 +49,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_drm_shared.h"
 
 #if defined(SUPPORT_DRI_DRM)
-
+#include <linux/platform_device.h>
 #if defined(PVR_DISPLAY_CONTROLLER_DRM_IOCTL)
 #include "3rdparty_dc_drm_shared.h"
 #endif
