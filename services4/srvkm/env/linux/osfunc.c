@@ -57,6 +57,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #else
 #include <asm/cacheflush.h>
 #endif
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0))
+ #include <linux/dma-map-ops.h>
+#endif
 #include <linux/mm.h>
 #include <linux/pagemap.h>
 #include <linux/hugetlb.h> 
