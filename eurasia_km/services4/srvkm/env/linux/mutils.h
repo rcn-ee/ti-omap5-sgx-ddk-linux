@@ -120,7 +120,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	#endif
 #endif
 
-#define	IOREMAP_UC(pa, bytes)	ioremap_nocache(pa, bytes)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0))
+	#define	IOREMAP_UC(pa, bytes)	ioremap_nocache(pa, bytes)
+#else
+	#define IOREMAP_UC(pa, bytes)	ioremap(pa, bytes)
+#endif
 
 IMG_VOID PVRLinuxMUtilsInit(IMG_VOID);
 
