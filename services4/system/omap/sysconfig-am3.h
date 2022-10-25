@@ -44,23 +44,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define __SOCCONFIG_AM3_H__
 
 #if defined(__linux__)
-#if defined(PVR_LDM_DEVICE_TREE)
-/* In the case of device tree model, the name of the driver, register and irq
- * mappping info is specified through device DT files in kernel.
- *
- * The set of valid compatible strings are set in the module initialization
- * file.
- */
-#else
-/* The below is legacy kernels, with no device tree support and the following
- * info explicitly specified through this config file.
- *   - Register and IRQ mapping
- */
-#define SYS_OMAP_SGX_REGS_SYS_PHYS_BASE	0x56000000
-#define SYS_OMAP_SGX_REGS_SIZE		0x1000000
-#define SYS_OMAP_SGX_IRQ		37	/* OMAP4 IRQ's are offset by 32 */
-
-#endif 	/* defined(PVR_LDM_DEVICE_TREE) */
 
 /* Information not coming from DT files */
 #define SYS_SGX_PDS_TIMER_FREQ		(1000)	// 1ms (1000hz)

@@ -65,23 +65,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* Interrupt bits */
 #define DEVICE_SGX_INTERRUPT		(1<<0)
 
-#if !defined(PVR_LDM_DEVICE_TREE)
-/* The below is legacy kernels, with no device tree support and the following
- * info explicitly specified through this config file.
- *   - Name
- */
-#if defined(PVR_LDM_PLATFORM_PRE_REGISTERED_DEV)
-#define	SYS_SGX_DEV_NAME	PVR_LDM_PLATFORM_PRE_REGISTERED_DEV
-#else
-/*
- * Recent OMAP4 kernels register SGX as platform device "omap_gpu".
- * This device must be used with the Linux power management calls
- * in sysutils_linux.c, in order for SGX to be powered on.
- */
-#define SYS_SGX_DEV_NAME	"omap_gpu"
-#endif 	/* defined(PVR_LDM_PLATFORM_PRE_REGISTERED_DEV) */
-
-#endif 	/* defined(PVR_LDM_DEVICE_TREE) */
 #endif 	/* defined(__linux__) */
 
 #endif	/* __SYSCONFIG_H__ */
