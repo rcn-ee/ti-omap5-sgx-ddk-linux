@@ -63,7 +63,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif 	/* defined(PVR_LDM_DEVICE_TREE) */
 
 /* Information not coming from DT files */
-#define VS_PRODUCT_NAME	"DRA7"
 #define SYS_SGX_PDS_TIMER_FREQ 		(1000)	// 1ms (1000hz)
 #define SYS_SGX_HWRECOVERY_TIMEOUT_FREQ	(100)	// 10ms (100hz)
 #if defined(SGX540) && (SGX_CORE_REV == 120)

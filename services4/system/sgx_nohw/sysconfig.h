@@ -47,8 +47,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "extsyscache.h"
 #endif
 
-#define VS_PRODUCT_NAME	"SGX No HW"
-
 #define SYS_SGX_USSE_COUNT					(1)
 
 #if defined(SGX_FEATURE_MP)

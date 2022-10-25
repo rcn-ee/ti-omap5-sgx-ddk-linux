@@ -526,7 +526,6 @@ IMG_VOID PDumpInit(IMG_VOID)
 			gpfnDbgDrv->pfnSetFrame(gsDBGPdumpState.psStream[i],0);
 		}
 
-		PDUMPCOMMENT("Driver Product Name: %s", VS_PRODUCT_NAME);
 		PDUMPCOMMENT("Driver Product Version: %s (%s)", PVRVERSION_STRING, PVRVERSION_FAMILY);
 		PDUMPCOMMENT("Start of Init Phase");
 	}
