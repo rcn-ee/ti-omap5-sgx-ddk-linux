@@ -67,13 +67,5 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SYS_SGX_HWRECOVERY_TIMEOUT_FREQ	(100)	// 10ms (100hz)
 #define SYS_SGX_CLOCK_SPEED		450000000
 
-/* Allow the AP latency to be overridden in the build config */
-#if !defined(SYS_SGX_ACTIVE_POWER_LATENCY_MS)
-#define SYS_SGX_ACTIVE_POWER_LATENCY_MS		(2)
-#endif
-
-/* Interrupt bits */
-#define DEVICE_SGX_INTERRUPT		(1<<0)
-
 #endif 	/* defined(__linux__) */
 #endif	/* __SYSCONFIG_AM6_H__ */

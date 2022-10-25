@@ -56,6 +56,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #if defined(__linux__)
+
+/* Allow the AP latency to be overridden in the build config */
+#if !defined(SYS_SGX_ACTIVE_POWER_LATENCY_MS)
+#define SYS_SGX_ACTIVE_POWER_LATENCY_MS		(2)
+#endif
+
+/* Interrupt bits */
+#define DEVICE_SGX_INTERRUPT		(1<<0)
+
 #if !defined(PVR_LDM_DEVICE_TREE)
 /* The below is legacy kernels, with no device tree support and the following
  * info explicitly specified through this config file.

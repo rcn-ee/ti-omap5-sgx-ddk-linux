@@ -67,20 +67,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SYS_SGX_HWRECOVERY_TIMEOUT_FREQ	(50)	// 20ms (50hz)
 #define SYS_SGX_CLOCK_SPEED		200000000
 
-/* Allow the AP latency to be overridden in the build config */
-#if !defined(SYS_SGX_ACTIVE_POWER_LATENCY_MS)
-#define SYS_SGX_ACTIVE_POWER_LATENCY_MS		(2)
-#endif
-
 /* Timer info for debug and timing builds
  * AM437x uses GP7 TIMER
  */
 #define SYS_OMAP_GPTIMER_ENABLE_SYS_PHYS_BASE	0x4804A038
 #define SYS_OMAP_GPTIMER_REGS_SYS_PHYS_BASE	0x4804A03C
 #define SYS_OMAP_GPTIMER_TSICR_SYS_PHYS_BASE	0x4804A054
-
-/* Interrupt bits */
-#define DEVICE_SGX_INTERRUPT		(1<<0)
 
 #endif 	/* defined(__linux__) */
 #endif	/* __SYSCONFIG_AM4_H__ */

@@ -71,20 +71,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SYS_SGX_CLOCK_SPEED		304742400
 #endif
 
-/* Allow the AP latency to be overridden in the build config */
-#if !defined(SYS_SGX_ACTIVE_POWER_LATENCY_MS)
-#define SYS_SGX_ACTIVE_POWER_LATENCY_MS		(2)
-#endif
-
 /* Timer info for debug and timing builds
  * DRA7 uses GP11 TIMER
  */
 #define SYS_OMAP_GPTIMER_ENABLE_SYS_PHYS_BASE	0x48088038
 #define SYS_OMAP_GPTIMER_REGS_SYS_PHYS_BASE	0x4808803C
 #define SYS_OMAP_GPTIMER_TSICR_SYS_PHYS_BASE	0x48088054
-
-/* Interrupt bits */
-#define DEVICE_SGX_INTERRUPT		(1<<0)
 
 #endif 	/* defined(__linux__) */
 #endif	/* __SYSCONFIG_DRA7_H__ */
