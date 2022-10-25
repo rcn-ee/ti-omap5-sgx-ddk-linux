@@ -45,45 +45,27 @@ include ../config/window_system.mk
 ifneq ($(filter ti335x,$(TARGET_PRODUCT)),)
  SGXCORE                        := 530
  SGX_CORE_REV                   := 125
-
- # SoC Version
- VS_PRODUCT_VERSION             := 3
 else ifneq ($(filter ti437x,$(TARGET_PRODUCT)),)
  SGXCORE                        := 530
  SGX_CORE_REV                   := 125
-
- # SoC Version
- VS_PRODUCT_VERSION             := 4
 else ifneq ($(filter jacinto6evm omap5uevm,$(TARGET_PRODUCT)),)
  SGXCORE                        := 544
  SGX_CORE_REV                   := 116
  SGX_FEATURE_MP                 := 1
  SGX_FEATURE_SYSTEM_CACHE       := 1
  SGX_FEATURE_MP_CORE_COUNT      := 2
-
- # SoC Version
- VS_PRODUCT_VERSION             := 5
 else ifneq ($(filter ti654x,$(TARGET_PRODUCT)),)
  SGXCORE                        := 544
  SGX_CORE_REV                   := 117
  SGX_FEATURE_MP                 := 1
  SGX_FEATURE_SYSTEM_CACHE       := 1
  SGX_FEATURE_MP_CORE_COUNT      := 1
-
- # SoC Version
- VS_PRODUCT_VERSION             := 6
 else ifneq ($(filter ti443x,$(TARGET_PRODUCT)),)
  SGXCORE                        := 540
  SGX_CORE_REV                   := 120
-
- # SoC Version
- VS_PRODUCT_VERSION             := 5
 else ifneq ($(filter ti343x,$(TARGET_PRODUCT)),)
  SGXCORE                        := 530
  SGX_CORE_REV                   := 121
-
- # SoC Version
- VS_PRODUCT_VERSION             := 5
 else
  # If a product wasn't specified, error out to prevent building for the wrong platform
  $(warning *** Unrecognised or empty TARGET_PRODUCT: $(TARGET_PRODUCT))
