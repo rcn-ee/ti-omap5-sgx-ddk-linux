@@ -66,16 +66,28 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SYS_OMAP_GPTIMER_REGS_SYS_PHYS_BASE	0x4804A03C
 #define SYS_OMAP_GPTIMER_TSICR_SYS_PHYS_BASE	0x4804A054
 
-#else
+#elif (SGXCORE == 544) && (SGX_CORE_REV == 116) // AM57xx, DRA7x
+
+/* Information not coming from DT files */
+#define SYS_SGX_PDS_TIMER_FREQ      (1000)   // 1ms (1000hz)
+#define SYS_SGX_HWRECOVERY_TIMEOUT_FREQ   (100) // 10ms (100hz)
+
+#define SYS_SGX_CLOCK_SPEED      304742400
+
+/* Timer info for debug and timing builds
+ * DRA7 uses GP11 TIMER
+ */
+#define SYS_OMAP_GPTIMER_ENABLE_SYS_PHYS_BASE   0x48088038
+#define SYS_OMAP_GPTIMER_REGS_SYS_PHYS_BASE  0x4808803C
+#define SYS_OMAP_GPTIMER_TSICR_SYS_PHYS_BASE 0x48088054
+
+#elif (SGXCORE == 540) && (SGX_CORE_REV == 120) // OMAP44xx
 
 /* Information not coming from DT files */
 #define SYS_SGX_PDS_TIMER_FREQ 		(1000)	// 1ms (1000hz)
 #define SYS_SGX_HWRECOVERY_TIMEOUT_FREQ	(100)	// 10ms (100hz)
-#if defined(SGX540) && (SGX_CORE_REV == 120)
+
 #define SYS_SGX_CLOCK_SPEED		307200000
-#else
-#define SYS_SGX_CLOCK_SPEED		304742400
-#endif
 
 /* Timer info for debug and timing builds
  * DRA7 uses GP11 TIMER
