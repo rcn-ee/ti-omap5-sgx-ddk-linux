@@ -4880,7 +4880,7 @@ PVRSRV_ERROR PVROSFuncInit(IMG_VOID)
     }
 #endif
 
-#if defined(SUPPORT_ION) && !defined(LMA)
+#if defined(SUPPORT_ION) && !defined(LMA) && (LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0))
 	{
 		PVRSRV_ERROR eError;
 		eError = IonInit();
