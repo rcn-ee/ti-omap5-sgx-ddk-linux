@@ -107,12 +107,15 @@ IMG_BOOL PVRSRVGetInitServerState(PVRSRV_INIT_SERVER_STATE eInitServerState)
 	{
 		case PVRSRV_INIT_SERVER_RUNNING:
 			bReturnVal = gbInitServerRunning;
+			PVR_DPF((PVR_DBG_MESSAGE, "PVRSRV_INIT_SERVER_RUNNING : State %x", bReturnVal));
 			break;
 		case PVRSRV_INIT_SERVER_RAN:
 			bReturnVal = gbInitServerRan;
+			PVR_DPF((PVR_DBG_MESSAGE, "PVRSRV_INIT_SERVER_RAN : State %x", bReturnVal));
 			break;
 		case PVRSRV_INIT_SERVER_SUCCESSFUL:
 			bReturnVal = gbInitSuccessful;
+			PVR_DPF((PVR_DBG_MESSAGE, "PVRSRV_INIT_SERVER_SUCCESSFUL : State %x", bReturnVal));
 			break;
 		default:
 			PVR_DPF((PVR_DBG_ERROR,
