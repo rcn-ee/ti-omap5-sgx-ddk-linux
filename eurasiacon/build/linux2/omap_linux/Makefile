@@ -149,6 +149,9 @@ endif
 ifeq ($(CROSS_COMPILE),arm-none-linux-gnueabihf-)
 UBUNTU_TOOLCHAIN = 1
 endif
+ifeq ($(CROSS_COMPILE),arm-oe-linux-gnueabi-)
+UBUNTU_TOOLCHAIN = 1
+endif
 
 ifeq ($(UBUNTU_TOOLCHAIN),)
 OPTIM := -Os
@@ -156,18 +159,21 @@ OPTIM := -Os
 ifneq ($(CROSS_COMPILE),)
 #check whether it should be trad
 ifeq ($(ARCH), arm64)
-SYS_CFLAGS += -mtls-dialect=desc
-SUPPORT_OMAP4430_NEON ?= 0
+#SYS_CFLAGS += -mtls-dialect=desc
+SUPPORT_NEON ?= 0
 else
-SYS_CFLAGS += -mtls-dialect=arm
-SUPPORT_OMAP4430_NEON ?= 1
+#SYS_CFLAGS += -mtls-dialect=arm
+SUPPORT_NEON ?= 1
 endif
 endif
 
-ifeq ($(SUPPORT_OMAP4430_NEON),1)
-SYS_CFLAGS += -ftree-vectorize -mfpu=neon -mfloat-abi=softfp
+ifeq ($(SUPPORT_NEON),1)
+SYS_CFLAGS += -ftree-vectorize -mfpu=neon -mfloat-abi=hard
 endif
 endif	# UBUNTU_TOOLCHAIN
+
+SYS_CXXFLAGS := $(SYS_CFLAGS)
+SYS_LDFLAGS := $(SYS_CFLAGS)
 
 LIBGCC := $(shell $(CROSS_COMPILE)gcc -print-libgcc-file-name)
 
