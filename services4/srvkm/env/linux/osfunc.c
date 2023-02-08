@@ -4484,23 +4484,92 @@ IMG_BOOL OSInvalidateCPUCacheRangeKM(IMG_HANDLE hOSMemHandle,
 
 static void per_cpu_cache_flush(void *arg)
 {
-	PVR_UNREFERENCED_PARAMETER(arg);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,2,0))
-	/*
-		NOTE: Regarding arm64 global flush support on >= Linux v4.2:
-		- Global cache flush support is deprecated from v4.2 onwards
-		- Cache maintenance is done using UM/KM VA maintenance _only_
-		- If you find that more time is spent in VA cache maintenance
-			- Implement arm64 assembly sequence for global flush here
-				- asm volatile ();
-		- If you do not want to implement the global cache assembly
-			- Disable KM cache maintenance support in UM cache.c
-			- Remove this PVR_LOG message
+#if defined(__aarch64__) && (LINUX_VERSION_CODE >= KERNEL_VERSION(4,2,0))
+	unsigned long irqflags;
+	signed long Clidr, Csselr, LoC, Assoc, Nway, Nsets, Level, Lsize, Var;
+	static DEFINE_SPINLOCK(spinlock);
+
+	spin_lock_irqsave(&spinlock, irqflags);
+
+	/* Read cache level ID register */
+	asm volatile (
+		"dmb sy\n\t"
+		"mrs %[rc], clidr_el1\n\t"
+		: [rc] "=r" (Clidr));
+
+	/* Exit if there is no cache level of coherency */
+	LoC = (Clidr & (((1UL << 3)-1) << 24)) >> 23;
+	if (! LoC)
+	{
+		goto e0;
+	}
+
+	/* This walks the cache hierarchy until the LLC/LOC cache, at each level skip
+	 * only instruction caches and determine the attributes at this dcache level.
 	*/
-	PVR_LOG(("arm64: Global d-cache flush assembly not implemented"));
+	for (Level = 0; LoC > Level; Level += 2)
+	{
+		/* Mask off this CtypeN bit, skip if not unified cache or separate
+		 * instruction and data caches */
+		Var = (Clidr >> (Level + (Level >> 1))) & ((1UL << 3) - 1);
+		if (Var < 2)
+		{
+			continue;
+		}
+
+		/* Select this dcache level for query */
+		asm volatile (
+			"msr csselr_el1, %[val]\n\t"
+			"isb\n\t"
+			"mrs %[rc], ccsidr_el1\n\t"
+			: [rc] "=r" (Csselr) : [val] "r" (Level));
+
+		/* Look-up this dcache organisation attributes */
+		Nsets = (Csselr >> 13) & ((1UL << 15) - 1);
+		Assoc = (Csselr >> 3) & ((1UL << 10) - 1);
+		Lsize = (Csselr & ((1UL << 3) - 1)) + 4;
+		Nway = 0;
+
+		/* For performance, do these in assembly; foreach dcache level/set,
+		 * foreach dcache set/way, construct the "DC CISW" instruction
+		 * argument and issue instruction */
+		asm volatile (
+			"mov x6, %[val0]\n\t"
+			"mov x9, %[rc1]\n\t"
+			"clz w9, w6\n\t"
+			"mov %[rc1], x9\n\t"
+			"lsetloop:\n\t"
+			"mov %[rc5], %[val0]\n\t"
+			"swayloop:\n\t"
+			"lsl x6, %[rc5], %[rc1]\n\t"
+			"orr x9, %[val2], x6\n\t"
+			"lsl x6, %[rc3], %[val4]\n\t"
+			"orr x9, x9, x6\n\t"
+			"dc     cisw, x9\n\t"
+			"subs %[rc5], %[rc5], #1\n\t"
+			"b.ge swayloop\n\t"
+			"subs %[rc3], %[rc3], #1\n\t"
+			"b.ge lsetloop\n\t"
+			: [rc1] "+r" (Nway), [rc3] "+r" (Nsets), [rc5] "+r" (Var)
+			: [val0] "r" (Assoc), [val2] "r" (Level), [val4] "r" (Lsize)
+			: "x6", "x9", "cc");
+	}
+
+e0:
+	/* Re-select L0 d-cache as active level, issue barrier before exit */
+	Var = 0;
+	asm volatile (
+		"msr csselr_el1, %[val]\n\t"
+		"dsb sy\n\t"
+		"isb\n\t"
+		: : [val] "r" (Var));
+
+	spin_unlock_irqrestore(&spinlock, irqflags);
+
 #else
 	flush_cache_all();
 #endif
+	PVR_UNREFERENCED_PARAMETER(arg);
 }
 
 IMG_VOID OSCleanCPUCacheKM(IMG_VOID)
