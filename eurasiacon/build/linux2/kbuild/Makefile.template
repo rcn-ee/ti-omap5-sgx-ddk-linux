@@ -54,7 +54,19 @@
 
 include $(OUT)/config_kernel.mk
 
+# .NOTINTERMEDIATE is more correct, but only available on newer Make versions.
+# Make 4.4 introduced .NOTINTERMEDIATE, and it appears in .FEATURES, but the
+# global .NOTINTERMEDIATE does not work. We can use it on Make > 4.4.
+# Use .SECONDARY for older Make versions, but "newer-prereq" cannot detect
+# deleted files.
+#
+# This logic is only required for kernel 6.2+
+NOTINTERMEDIATE_PATCH_REQUIRED=$(shell [ "$(VERSION)" -gt "6" ] || { [ "$(VERSION)" -eq "6" ] && [ "$(PATCHLEVEL)" -ge "2" ]; } && echo "true")
+ifneq ($(and $(filter notintermediate, $(.FEATURES)),$(filter-out 4.4,$(MAKE_VERSION)),$(NOTINTERMEDIATE_PATCH_REQUIRED)),)
+.NOTINTERMEDIATE:
+else
 .SECONDARY:
+endif
 
 $(OUT)/$(TARGET_PRIMARY_ARCH)/kbuild/external/%.c: $(EXTRA_KBUILD_SOURCE)/%.c
 	@if [ ! -e $(dir $@) ]; then mkdir -p $(dir $@); fi
