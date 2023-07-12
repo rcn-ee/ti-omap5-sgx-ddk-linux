@@ -223,7 +223,7 @@ static IMG_INT pvr_proc_open(struct inode *inode,struct file *file)
 	IMG_INT ret = seq_open(file, &pvr_proc_seq_operations);
 
 	struct seq_file *seq = (struct seq_file*)file->private_data;
-	struct pvr_proc_dir_entry* ppde = PDE_DATA(inode);
+	struct pvr_proc_dir_entry* ppde = pde_data(inode);
 
 	/* Add pointer to handlers to seq_file structure */
 	seq->private = ppde;
@@ -248,7 +248,7 @@ static ssize_t pvr_proc_write(struct file *file, const char __user *buffer,
 	struct pvr_proc_dir_entry * ppde;
 
 	PVR_UNREFERENCED_PARAMETER(ppos);
-	ppde = PDE_DATA(inode);
+	ppde = pde_data(inode);
 
 	if (!ppde->write)
 		return -EIO;
