@@ -47,7 +47,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "syscommon.h"
 #include "pvr_linux_fence.h"
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0))
 #include <linux/types.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
@@ -55,11 +54,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/mutex.h>
 #include <linux/atomic.h>
 #include <linux/spinlock.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 #include <linux/dma-fence.h>
-#else
-#include <linux/fence.h>
-#endif
 #include <linux/dma-resv.h>
 #include <linux/list.h>
 
@@ -85,13 +80,8 @@ struct pvr_fence_frame;
 
 struct pvr_blocking_fence
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 	struct dma_fence *fence;
 	struct dma_fence_cb cb;
-#else
-	struct fence *fence;
-	struct fence_cb cb;
-#endif
 	struct pvr_fence_frame *pvr_fence_frame;
 	bool installed;
 };
@@ -109,22 +99,14 @@ struct pvr_fence_frame
 	struct pvr_blocking_fence *blocking_fences;
 	unsigned blocking_fence_count;
 	atomic_t blocking_count;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 	struct dma_fence *fence_to_signal;
-#else
-	struct fence *fence_to_signal;
-#endif
 	bool unblock;
 	bool have_blocking_fences;
 };
 
 struct pvr_fence
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 	struct dma_fence fence;
-#else
-	struct fence fence;
-#endif
 	spinlock_t lock;
 	struct pvr_fence_context *pvr_fence_context;
 	u32 tag;
@@ -158,38 +140,22 @@ static unsigned next_seqno(void)
 	return atomic_inc_return(&fence_seqno) - 1;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 static const char *get_driver_name(struct dma_fence *fence)
-#else
-static const char *get_driver_name(struct fence *fence)
-#endif
 {
 	return drvname;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 static const char *get_timeline_name(struct dma_fence *fence)
-#else
-static const char *get_timeline_name(struct fence *fence)
-#endif
 {
 	return timeline_name;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 static bool enable_signaling(struct dma_fence *fence)
-#else
-static bool enable_signaling(struct fence *fence)
-#endif
 {
 	return true;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 static void release_fence(struct dma_fence *fence)
-#else
-static void release_fence(struct fence *fence)
-#endif
 {
 	struct pvr_fence *pvr_fence = container_of(fence, struct pvr_fence, fence);
 	kfree(pvr_fence);
@@ -197,37 +163,21 @@ static void release_fence(struct fence *fence)
 	atomic_dec(&fences_outstanding);
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 static struct dma_fence_ops fence_ops =
-#else
-static struct fence_ops fence_ops =
-#endif
 {
 	.get_driver_name = get_driver_name,
 	.get_timeline_name = get_timeline_name,
 	.enable_signaling = enable_signaling,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 	.wait = dma_fence_default_wait,
-#else
-	.wait = fence_default_wait,
-#endif
 	.release = release_fence
 };
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 static inline bool is_pvr_fence(const struct dma_fence *fence)
-#else
-static inline bool is_pvr_fence(const struct fence *fence)
-#endif
 {
 	return fence->ops == &fence_ops;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 static struct dma_fence *create_fence_to_signal(struct pvr_fence_frame *pvr_fence_frame)
-#else
-static struct fence *create_fence_to_signal(struct pvr_fence_frame *pvr_fence_frame)
-#endif
 {
 	struct pvr_fence *pvr_fence;
 	unsigned seqno = next_seqno();
@@ -240,11 +190,7 @@ static struct fence *create_fence_to_signal(struct pvr_fence_frame *pvr_fence_fr
 
 	spin_lock_init(&pvr_fence->lock);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 	dma_fence_init(&pvr_fence->fence, &fence_ops, &pvr_fence->lock, fence_context, seqno);
-#else
-	fence_init(&pvr_fence->fence, &fence_ops, &pvr_fence->lock, fence_context, seqno);
-#endif
 	pvr_fence->pvr_fence_context = pvr_fence_frame->pvr_fence_context;
 	pvr_fence->tag = pvr_fence_frame->tag;
 
@@ -257,11 +203,8 @@ static struct fence *create_fence_to_signal(struct pvr_fence_frame *pvr_fence_fr
 
 	return pvr_fence_frame->fence_to_signal;
 }
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
+
 static inline bool is_blocking_fence(const struct dma_fence *fence,
-#else
-static inline bool is_blocking_fence(const struct fence *fence,
-#endif
 				const struct pvr_fence_frame *pvr_fence_frame)
 {
 	if (is_pvr_fence(fence))
@@ -280,13 +223,8 @@ static void signal_and_put_fence(struct pvr_fence_frame *pvr_fence_frame)
 	{
 		struct pvr_fence_context *pvr_fence_context = pvr_fence_frame->pvr_fence_context;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 		dma_fence_signal(pvr_fence_frame->fence_to_signal);
 		dma_fence_put(pvr_fence_frame->fence_to_signal);
-#else
-		fence_signal(pvr_fence_frame->fence_to_signal);
-		fence_put(pvr_fence_frame->fence_to_signal);
-#endif
 
 		pvr_fence_frame->fence_to_signal = NULL;
 
@@ -298,11 +236,7 @@ static void signal_and_put_fence(struct pvr_fence_frame *pvr_fence_frame)
 	}
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 static void blocking_fence_signalled(struct dma_fence *fence, struct dma_fence_cb *cb)
-#else
-static void blocking_fence_signalled(struct fence *fence, struct fence_cb *cb)
-#endif
 {
 	struct pvr_blocking_fence *pvr_blocking_fence = container_of(cb, struct pvr_blocking_fence, cb);
 	struct pvr_fence_frame *pvr_fence_frame = pvr_blocking_fence->pvr_fence_frame;
@@ -337,11 +271,7 @@ static void free_blocking_fence_storage(struct pvr_fence_frame *pvr_fence_frame)
 	}
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 static int install_and_get_blocking_fence(struct pvr_fence_frame *pvr_fence_frame, unsigned index, struct dma_fence *fence)
-#else
-static int install_and_get_blocking_fence(struct pvr_fence_frame *pvr_fence_frame, unsigned index, struct fence *fence)
-#endif
 {
 	struct pvr_blocking_fence *pvr_blocking_fence = &pvr_fence_frame->blocking_fences[index];
 	int ret;
@@ -353,11 +283,7 @@ static int install_and_get_blocking_fence(struct pvr_fence_frame *pvr_fence_fram
 
 	atomic_inc(&pvr_fence_frame->blocking_count);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 	ret = dma_fence_add_callback(pvr_blocking_fence->fence,
-#else
-	ret = fence_add_callback(pvr_blocking_fence->fence,
-#endif
 			&pvr_blocking_fence->cb,
 			blocking_fence_signalled);
 
@@ -369,11 +295,7 @@ static int install_and_get_blocking_fence(struct pvr_fence_frame *pvr_fence_fram
 	}
 	else
 	{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 		dma_fence_get(fence);
-#else
-		fence_get(fence);
-#endif
 #if defined(DEBUG)
 		atomic_inc(&callbacks_installed);
 #endif
@@ -389,19 +311,11 @@ static void uninstall_and_put_blocking_fence(struct pvr_fence_frame *pvr_fence_f
 
 	if (pvr_blocking_fence->installed)
 	{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 		if (dma_fence_remove_callback(pvr_blocking_fence->fence, &pvr_blocking_fence->cb))
-#else
-		if (fence_remove_callback(pvr_blocking_fence->fence, &pvr_blocking_fence->cb))
-#endif
 		{
 			atomic_dec(&pvr_fence_frame->blocking_count);
 		}
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 		dma_fence_put(pvr_blocking_fence->fence);
-#else
-		fence_put(pvr_blocking_fence->fence);
-#endif
 	}
 }
 
@@ -414,11 +328,7 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 						struct dma_resv *resv)
 {
 	struct dma_resv_list *flist;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 	struct dma_fence *fence_to_signal;
-#else
-	struct fence *fence_to_signal;
-#endif
 	unsigned shared_fence_count;
 	unsigned blocking_fence_count;
 	unsigned i;
@@ -441,11 +351,7 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 
 	if (!shared_fence_count)
 	{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 		struct dma_fence *fence = dma_resv_get_excl(resv);
-#else
-		struct fence *fence = dma_resv_get_excl(resv);
-#endif
 
 		if (fence && is_blocking_fence(fence, pvr_fence_frame))
 		{
@@ -455,11 +361,7 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 			}
 			else
 			{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 				dma_fence_put(fence_to_signal);
-#else
-				fence_put(fence_to_signal);
-#endif
 				return -ENOMEM;
 			}
 		}
@@ -475,11 +377,7 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 	for (i = 0, blocking_fence_count = 0; i < shared_fence_count; i++)
 	{
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 		struct dma_fence *fence = rcu_dereference_protected(flist->shared[i], dma_resv_held(resv));
-#else
-		struct fence *fence = rcu_dereference_protected(flist->shared[i], dma_resv_held(resv));
-#endif
 
 		if (is_blocking_fence(fence, pvr_fence_frame))
 		{
@@ -494,11 +392,7 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 		{
 			for (i = 0; i < blocking_fence_count; i++)
 			{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 				struct dma_fence *fence = rcu_dereference_protected(flist->shared[i], dma_resv_held(resv));
-#else
-				struct fence *fence = rcu_dereference_protected(flist->shared[i], dma_resv_held(resv));
-#endif
 
 				if (is_blocking_fence(fence, pvr_fence_frame))
 				{
@@ -511,11 +405,7 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 		}
 		else
 		{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 			dma_fence_put(fence_to_signal);
-#else
-			fence_put(fence_to_signal);
-#endif
 			return -ENOMEM;
 		}
 	}
@@ -528,13 +418,8 @@ static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 						struct dma_resv *resv)
 {
 	struct dma_resv_list *flist;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 	struct dma_fence *fence_to_signal = NULL;
 	struct dma_fence *blocking_fence = NULL;
-#else
-	struct fence *fence_to_signal = NULL;
-	struct fence *blocking_fence = NULL;
-#endif
 	bool reserve = true;
 	unsigned shared_fence_count;
 	unsigned i;
@@ -570,11 +455,7 @@ static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 	 */
 	for (i = 0; i < shared_fence_count; i++)
 	{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 		struct dma_fence *fence = rcu_dereference_protected(flist->shared[i], dma_resv_held(resv));
-#else
-		struct fence *fence = rcu_dereference_protected(flist->shared[i], dma_resv_held(resv));
-#endif
 
 		if (is_pvr_fence(fence))
 		{
@@ -605,11 +486,7 @@ static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 
 	if (!blocking_fence && !shared_fence_count)
 	{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 		struct dma_fence *fence = dma_resv_get_excl(resv);
-#else
-		struct fence *fence = dma_resv_get_excl(resv);
-#endif
 
 		if (fence && is_blocking_fence(fence, pvr_fence_frame))
 		{
@@ -626,11 +503,7 @@ static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 		else
 		{
 			ret = -ENOMEM;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 			dma_fence_put(fence_to_signal);
-#else
-			fence_put(fence_to_signal);
-#endif
 			return ret;
 		}
 	}
@@ -955,19 +828,10 @@ static inline bool sync_enabled(const IMG_BOOL *pbEnabled,
 	return (!pbEnabled || pbEnabled[index]) && phSyncInfo && phSyncInfo[index];
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 static inline bool fence_is_blocking(const struct dma_fence *fence,
-#else
-static inline bool fence_is_blocking(const struct fence *fence,
-#endif
 			       const PVRSRV_KERNEL_SYNC_INFO *psSyncInfo)
 {
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 	if (test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags))
-#else
-	if (test_bit(FENCE_FLAG_SIGNALED_BIT, &fence->flags))
-#endif
 	{
 		return false;
 	}
@@ -987,11 +851,7 @@ static bool resv_is_blocking(struct dma_resv *resv,
 				      bool is_dst)
 {
 	struct dma_resv_list *flist;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 	struct dma_fence *fence;
-#else
-	struct fence *fence;
-#endif
 	bool blocking;
 	unsigned shared_count;
 	unsigned seq;
@@ -1623,96 +1483,6 @@ int PVRLinuxFenceInit(void)
 		return -ENOMEM;
 	}
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0))
 	fence_context = dma_fence_context_alloc(1);
-#else
-	fence_context = fence_context_alloc(1);
-#endif
 	return 0;
 }
-#else	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17)) */
-IMG_HANDLE PVRLinuxFenceContextCreate(PVRSRV_KERNEL_SYNC_INFO *psSyncInfo, IMG_HANDLE hImport)
-{
-	(void) psSyncInfo;
-	(void) hImport;
-
-	return (IMG_HANDLE)(IMG_UINTPTR_T)0xbad;
-}
-
-void PVRLinuxFenceContextDestroy(IMG_HANDLE hFenceContext)
-{
-	(void) hFenceContext;
-}
-
-IMG_UINT32 PVRLinuxFenceNumResvObjs(IMG_BOOL *pbBlockingFences,
-				IMG_UINT32 ui32NumSrcSyncs,
-				IMG_HANDLE *phSrcSyncInfo,
-				const IMG_BOOL *pbSrcEnabled,
-				IMG_UINT32 ui32NumDstSyncs,
-				IMG_HANDLE *phDstSyncInfo,
-				const IMG_BOOL *pbDstEnabled)
-{
-	(void) pbBlockingFences;
-	(void) ui32NumSrcSyncs;
-	(void) phSrcSyncInfo;
-	(void) pbSrcEnabled;
-	(void) ui32NumDstSyncs;
-	(void) phDstSyncInfo;
-	(void) pbDstEnabled;
-
-	return PVRSRV_OK;
-}
-
-PVRSRV_ERROR PVRLinuxFenceProcess(IMG_UINT32 *pui32Tag,
-				IMG_UINT32 ui32NumResvObjs,
-				IMG_BOOL bBlockingFences,
-				IMG_UINT32 ui32NumSrcSyncs,
-				IMG_HANDLE *phSrcSyncInfo,
-				const IMG_BOOL *pbSrcEnabled,
-				IMG_UINT32 ui32NumDstSyncs,
-				IMG_HANDLE *phDstSyncInfo,
-				const IMG_BOOL *pbDstEnabled)
-{
-	(void) pui32Tag;
-	(void) ui32NumResvObjs;
-	(void) bBlockingFences;
-	(void) ui32NumSrcSyncs;
-	(void) phSrcSyncInfo;
-	(void) pbSrcEnabled;
-	(void) ui32NumDstSyncs;
-	(void) phDstSyncInfo;
-	(void) pbDstEnabled;
-
-	return PVRSRV_OK;
-}
-
-void PVRLinuxFenceRelease(IMG_UINT32 ui32Tag,
-				IMG_UINT32 ui32NumSrcSyncs,
-				IMG_HANDLE *phSrcSyncInfo,
-				const IMG_BOOL *pbSrcEnabled,
-				IMG_UINT32 ui32NumDstSyncs,
-				IMG_HANDLE *phDstSyncInfo,
-				const IMG_BOOL *pbDstEnabled)
-{
-	(void) ui32Tag;
-	(void) ui32NumSrcSyncs;
-	(void) phSrcSyncInfo;
-	(void) pbSrcEnabled;
-	(void) ui32NumDstSyncs;
-	(void) phDstSyncInfo;
-	(void) pbDstEnabled;
-}
-
-void PVRLinuxFenceCheckAll(void)
-{
-}
-
-int PVRLinuxFenceInit(void)
-{
-	return 0;
-}
-
-void PVRLinuxFenceDeInit(void)
-{
-}
-#endif	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17)) */
