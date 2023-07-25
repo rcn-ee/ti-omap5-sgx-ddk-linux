@@ -177,6 +177,31 @@ static inline bool is_pvr_fence(const struct dma_fence *fence)
 	return fence->ops == &fence_ops;
 }
 
+static void dma_resv_count_fences(struct dma_resv *resv,
+				  u32 *read_fence_count_out,
+				  u32 *write_fence_count_out)
+{
+	struct dma_resv_iter cursor;
+	u32 write_fence_count = 0;
+	u32 read_fence_count = 0;
+	struct dma_fence *fence;
+
+	dma_resv_iter_begin(&cursor, resv, DMA_RESV_USAGE_READ);
+	dma_resv_for_each_fence_unlocked(&cursor, fence) {
+		if (dma_resv_iter_is_restarted(&cursor)) {
+			read_fence_count = 0;
+			write_fence_count = 0;
+		}
+		if (dma_resv_iter_usage(&cursor) == DMA_RESV_USAGE_READ)
+			read_fence_count++;
+		else if (dma_resv_iter_usage(&cursor) == DMA_RESV_USAGE_WRITE)
+			write_fence_count++;
+	}
+
+	*read_fence_count_out = read_fence_count;
+	*write_fence_count_out = write_fence_count;
+}
+
 static struct dma_fence *create_fence_to_signal(struct pvr_fence_frame *pvr_fence_frame)
 {
 	struct pvr_fence *pvr_fence;
