@@ -352,15 +352,14 @@ static inline int update_reservation_return_value(int ret, bool blocked_on_write
 static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 						struct dma_resv *resv)
 {
-	struct dma_resv_list *flist;
 	struct dma_fence *fence_to_signal;
-	unsigned shared_fence_count;
-	unsigned blocking_fence_count;
-	unsigned i;
 	int ret;
 
-	flist = dma_resv_get_list(resv);
-	shared_fence_count = flist ? flist->shared_count : 0;
+	ret = dma_resv_reserve_fences(resv, 1);
+	if (ret)
+	{
+		return ret;
+	}
 
 	fence_to_signal = create_fence_to_signal(pvr_fence_frame);
 	if (!fence_to_signal)
@@ -370,89 +369,22 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 
 	if (!pvr_fence_frame->have_blocking_fences)
 	{
-		dma_resv_add_excl_fence(resv, fence_to_signal);
+		dma_resv_add_fence(resv, fence_to_signal, DMA_RESV_USAGE_WRITE);
 		return 0;
 	}
 
-	if (!shared_fence_count)
-	{
-		struct dma_fence *fence = dma_resv_get_excl(resv);
-
-		if (fence && is_blocking_fence(fence, pvr_fence_frame))
-		{
-			if (allocate_blocking_fence_storage(pvr_fence_frame, 1))
-			{	
-				ret = install_and_get_blocking_fence(pvr_fence_frame, 0, fence);
-			}
-			else
-			{
-				dma_fence_put(fence_to_signal);
-				return -ENOMEM;
-			}
-		}
-		else
-		{
-			ret = 1;
-		}
-
-		dma_resv_add_excl_fence(resv, fence_to_signal);
-		return update_reservation_return_value(ret, true);
-	}
-
-	for (i = 0, blocking_fence_count = 0; i < shared_fence_count; i++)
-	{
-
-		struct dma_fence *fence = rcu_dereference_protected(flist->shared[i], dma_resv_held(resv));
-
-		if (is_blocking_fence(fence, pvr_fence_frame))
-		{
-			blocking_fence_count++;
-		}
-	}
-
-	ret = 1;
-	if (blocking_fence_count)
-	{
-		if (allocate_blocking_fence_storage(pvr_fence_frame, blocking_fence_count))
-		{
-			for (i = 0; i < blocking_fence_count; i++)
-			{
-				struct dma_fence *fence = rcu_dereference_protected(flist->shared[i], dma_resv_held(resv));
-
-				if (is_blocking_fence(fence, pvr_fence_frame))
-				{
-					if (!install_and_get_blocking_fence(pvr_fence_frame, i, fence))
-					{
-						ret = 0;
-					}
-				}
-			}
-		}
-		else
-		{
-			dma_fence_put(fence_to_signal);
-			return -ENOMEM;
-		}
-	}
-
-	dma_resv_add_excl_fence(resv, fence_to_signal);
 	return update_reservation_return_value(ret, false);
 }
 
 static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 						struct dma_resv *resv)
 {
-	struct dma_resv_list *flist;
 	struct dma_fence *fence_to_signal = NULL;
-	struct dma_fence *blocking_fence = NULL;
-	bool reserve = true;
-	unsigned shared_fence_count;
-	unsigned i;
 	int ret;
 
 	if (!pvr_fence_frame->have_blocking_fences)
 	{
-		ret = dma_resv_reserve_shared(resv, 1);
+		ret = dma_resv_reserve_fences(resv, 1);
 		if (ret)
 		{
 			return ret;
@@ -464,82 +396,13 @@ static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 			return -ENOMEM;
 		}
 
-		dma_resv_add_shared_fence(resv, fence_to_signal);
+		dma_resv_add_fence(resv, fence_to_signal, DMA_RESV_USAGE_READ);
 
 		return 0;
 	}
 
-	flist = dma_resv_get_list(resv);
-	shared_fence_count = flist ? flist->shared_count : 0;
 
-	/*
-	 * There can't be more than one shared fence for a given
-	 * fence context, so if a PVR fence is already in the list,
-	 * we don't need to reserve space for the new one, but need
-	 * to block on it if it isn't ours.
-	 */
-	for (i = 0; i < shared_fence_count; i++)
-	{
-		struct dma_fence *fence = rcu_dereference_protected(flist->shared[i], dma_resv_held(resv));
-
-		if (is_pvr_fence(fence))
-		{
-			reserve = false;
-
-			if (is_blocking_fence(fence, pvr_fence_frame))
-			{
-				blocking_fence = fence;
-			}
-			break;
-		}
-	}
-
-	if (reserve)
-	{
-		ret = dma_resv_reserve_shared(resv, 1);
-		if (ret)
-		{
-			return ret;
-		}
-	}
-
-	fence_to_signal = create_fence_to_signal(pvr_fence_frame);
-	if (!fence_to_signal)
-	{
-		return -ENOMEM;
-	}
-
-	if (!blocking_fence && !shared_fence_count)
-	{
-		struct dma_fence *fence = dma_resv_get_excl(resv);
-
-		if (fence && is_blocking_fence(fence, pvr_fence_frame))
-		{
-			blocking_fence = fence;
-		}
-	}
-
-	if (blocking_fence)
-	{
-		if (allocate_blocking_fence_storage(pvr_fence_frame, 1))
-		{	
-			ret = install_and_get_blocking_fence(pvr_fence_frame, 0, blocking_fence);
-		}
-		else
-		{
-			ret = -ENOMEM;
-			dma_fence_put(fence_to_signal);
-			return ret;
-		}
-	}
-	else
-	{
-		ret = 1;
-	}
-
-	dma_resv_add_shared_fence(resv, fence_to_signal);
-
-	return update_reservation_return_value(ret, !shared_fence_count);
+	return update_reservation_return_value(ret, false);
 }
 
 /* Must be called with pvr_fence_context mutex held */
@@ -875,60 +738,36 @@ static bool resv_is_blocking(struct dma_resv *resv,
 				      const PVRSRV_KERNEL_SYNC_INFO *psSyncInfo,
 				      bool is_dst)
 {
-	struct dma_resv_list *flist;
 	struct dma_fence *fence;
+	struct dma_resv_iter cursor;
 	bool blocking;
-	unsigned shared_count;
-	unsigned seq;
+	u32 shared_count;
+	u32 blocking_count;
 
-retry:
-	shared_count = 0;
-	blocking = false;
-
-	seq = read_seqcount_begin(&resv->seq);
-	rcu_read_lock();
-
-	flist = rcu_dereference(resv->fence);
-	if (read_seqcount_retry(&resv->seq, seq))
-	{
-		goto unlock_retry;
-	}
-
-	if (flist)
-	{
-		shared_count = flist->shared_count;
-	}
+	dma_resv_count_fences(resv, &shared_count, &blocking_count);
 
 	if (is_dst)
 	{
-		unsigned i;
-
-		for (i = 0; (i < shared_count) && !blocking; i++)
-		{
-			fence = rcu_dereference(flist->shared[i]);
-
+		dma_resv_iter_begin(&cursor, resv, DMA_RESV_USAGE_READ);
+		dma_resv_for_each_fence_unlocked(&cursor, fence) {
+			blocking = false;
 			blocking = fence_is_blocking(fence, psSyncInfo);
+			if (blocking)
+				goto err_iter_end;
 		}
 	}
 
 	if (!blocking && !shared_count)
 	{
-		fence = rcu_dereference(resv->fence_excl);
-		if (read_seqcount_retry(&resv->seq, seq))
-		{
-			goto unlock_retry;
+		dma_resv_iter_begin(&cursor, resv, DMA_RESV_USAGE_WRITE);
+		dma_resv_for_each_fence_unlocked(&cursor, fence) {
+			blocking = fence_is_blocking(fence, psSyncInfo);
 		}
-
-		blocking = fence && fence_is_blocking(fence, psSyncInfo);
 	}
 
-	rcu_read_unlock();
-
+err_iter_end:
+	dma_resv_iter_end(&cursor);
 	return blocking;
-
-unlock_retry:
-	rcu_read_unlock();
-	goto retry;
 }
 
 static unsigned count_reservation_objects(unsigned num_syncs,
