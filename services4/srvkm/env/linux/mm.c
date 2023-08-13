@@ -593,7 +593,7 @@ _VMapWrapper(struct page **ppsPageList, IMG_UINT32 ui32NumPages, IMG_UINT32 ui32
             return NULL;
     }
 
-    pvRet = vmap(ppsPageList, ui32NumPages, GFP_KERNEL | __GFP_HIGHMEM, PGProtFlags);
+    pvRet = vmap(ppsPageList, ui32NumPages, VM_MAP, PGProtFlags);
 
 #if defined(DEBUG_LINUX_MEMORY_ALLOCATIONS)
     if (pvRet)
