@@ -55,7 +55,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * pointers to the structures themselves.
  */
 
-#include <stddef.h>
+#include <linux/stddef.h>
 
 #include "services_headers.h"
 #include "handle.h"

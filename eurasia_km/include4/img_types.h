@@ -45,7 +45,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if   defined(LINUX) && defined(__KERNEL__)
 	#include "kernel_types.h"
 #elif defined(LINUX) || defined(__QNXNTO__) || defined(__METAG)
-	#include <stddef.h>			/* NULL */
+	#include <linux/stddef.h>
 	#include <stdint.h>			/* intX_t/uintX_t, format specifiers */
 	#include <limits.h>			/* INT_MIN, etc */
 #else

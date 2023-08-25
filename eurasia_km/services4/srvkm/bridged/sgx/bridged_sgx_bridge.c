@@ -43,7 +43,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 
-#include <stddef.h>
+#include <linux/stddef.h>
 
 #include "img_defs.h"
 
