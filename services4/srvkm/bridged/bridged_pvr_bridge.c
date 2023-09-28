@@ -5017,8 +5017,9 @@ IMG_INT BridgedDispatchKM(PVRSRV_PER_PROCESS_DATA * psPerProc,
 	err = 0;
 return_fault:
 
-	if (err)
+	if (err) {
 		PVR_DPF((PVR_DBG_MESSAGE, "ui32BridgeID = %d Failed!", ui32BridgeID));
+	}
 
 	ReleaseHandleBatch(psPerProc);
 	return err;
