@@ -919,7 +919,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVInsertCommandKM(PVRSRV_QUEUE_INFO	*psQueue,
 #elif defined(PVR_ANDROID_NATIVE_WINDOW_HAS_FENCE)
 	if(phFence != IMG_NULL)
 	{
-		struct fence *psRetireFence, *psCleanupFence;
+		struct dma_fence *psRetireFence, *psCleanupFence;
 
 		SyncSWGetTimelineObj(psQueue->i32TimelineFd, &psCommand->pvTimeline);
 		if(psCommand->pvTimeline == IMG_NULL)

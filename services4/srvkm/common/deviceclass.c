@@ -1849,7 +1849,7 @@ PVRSRV_ERROR PVRSRVSwapToDCBuffer2KM(IMG_HANDLE	hDeviceKM,
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC)
 	struct sync_fence *apsFence[SGX_MAX_SRC_SYNCS_TA] = {};
 #elif defined(PVR_ANDROID_NATIVE_WINDOW_HAS_FENCE)
-	struct fence *apsFence[SGX_MAX_SRC_SYNCS_TA] = {};
+	struct dma_fence *apsFence[SGX_MAX_SRC_SYNCS_TA] = {};
 #endif /* defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC) */
 
 	if(!hDeviceKM || !hSwapChain || !ppsMemInfos || !ppsSyncInfos || ui32NumMemSyncInfos < 1)
