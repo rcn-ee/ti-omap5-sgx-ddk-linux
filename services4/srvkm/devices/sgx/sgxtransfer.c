@@ -41,7 +41,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(TRANSFER_QUEUE)
 
-#include <stddef.h>
+#include "img_defs.h"
 
 #include "sgxdefs.h"
 #include "services_headers.h"

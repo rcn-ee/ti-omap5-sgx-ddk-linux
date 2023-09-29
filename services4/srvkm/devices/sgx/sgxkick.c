@@ -39,7 +39,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#include <stddef.h> /* For the macro offsetof() */
+#include "img_defs.h" /* For the macro offsetof() */
 #include "services_headers.h"
 #include "sgxinfo.h"
 #include "sgxinfokm.h"
