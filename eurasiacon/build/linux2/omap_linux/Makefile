@@ -43,33 +43,33 @@ include ../config/window_system.mk
 
 # Customize this build as per the TARGET_PRODUCT setting
 ifneq ($(filter ti335x,$(TARGET_PRODUCT)),)
- SGXCORE                        := 530
- SGX_CORE_REV                   := 125
+  SGXCORE                        := 530
+  SGX_CORE_REV                   := 125
 else ifneq ($(filter ti437x,$(TARGET_PRODUCT)),)
- SGXCORE                        := 530
- SGX_CORE_REV                   := 125
+  SGXCORE                        := 530
+  SGX_CORE_REV                   := 125
 else ifneq ($(filter ti572x,$(TARGET_PRODUCT)),)
- SGXCORE                        := 544
- SGX_CORE_REV                   := 116
- SGX_FEATURE_MP                 := 1
- SGX_FEATURE_SYSTEM_CACHE       := 1
- SGX_FEATURE_MP_CORE_COUNT      := 2
+  SGXCORE                        := 544
+  SGX_CORE_REV                   := 116
+  SGX_FEATURE_MP                 := 1
+  SGX_FEATURE_SYSTEM_CACHE       := 1
+  SGX_FEATURE_MP_CORE_COUNT      := 2
 else ifneq ($(filter ti654x,$(TARGET_PRODUCT)),)
- SGXCORE                        := 544
- SGX_CORE_REV                   := 117
- SGX_FEATURE_MP                 := 1
- SGX_FEATURE_SYSTEM_CACHE       := 1
- SGX_FEATURE_MP_CORE_COUNT      := 1
+  SGXCORE                        := 544
+  SGX_CORE_REV                   := 117
+  SGX_FEATURE_MP                 := 1
+  SGX_FEATURE_SYSTEM_CACHE       := 1
+  SGX_FEATURE_MP_CORE_COUNT      := 1
 else ifneq ($(filter ti443x,$(TARGET_PRODUCT)),)
- SGXCORE                        := 540
- SGX_CORE_REV                   := 120
+  SGXCORE                        := 540
+  SGX_CORE_REV                   := 120
 else ifneq ($(filter ti343x,$(TARGET_PRODUCT)),)
- SGXCORE                        := 530
- SGX_CORE_REV                   := 121
+  SGXCORE                        := 530
+  SGX_CORE_REV                   := 121
 else
- # If a product wasn't specified, error out to prevent building for the wrong platform
- $(warning *** Unrecognised or empty TARGET_PRODUCT: $(TARGET_PRODUCT))
- $(error *** Supported Target Systems are: ti335x ti437x ti572x ti654x ti443x ti343x)
+  # If a product wasn't specified, error out to prevent building for the wrong platform
+  $(warning *** Unrecognised or empty TARGET_PRODUCT: $(TARGET_PRODUCT))
+  $(error *** Supported Target Systems are: ti335x ti437x ti572x ti654x ti443x ti343x)
 endif
 
 PVRSRV_NEED_PVR_DPF := 1
@@ -103,8 +103,8 @@ PVR_SYSTEM		:= omap
 
 KERNEL_COMPONENTS := srvkm
 ifeq ($(PVR_LWS_NOBC),)
-BUFFERCLASS_MODULE := bufferclass_example
-KERNEL_COMPONENTS += $(BUFFERCLASS_MODULE)
+  BUFFERCLASS_MODULE := bufferclass_example
+  KERNEL_COMPONENTS += $(BUFFERCLASS_MODULE)
 endif
 
 SUPPORT_OLD_ION_API := 1
@@ -118,58 +118,55 @@ SUPPORT_OLD_ION_API := 1
 LDM_PLATFORM ?= 1
 
 ifeq ($(LDM_PLATFORM),1)
-SUPPORT_LINUX_USING_WORKQUEUES := 1
-#With DRM EGL and display, omaplfb is not needed
-#DISPLAY_CONTROLLER_COMPONENT += dc_omapfb3_linux
-#DISPLAY_CONTROLLER := omaplfb
+  SUPPORT_LINUX_USING_WORKQUEUES := 1
+  #With DRM EGL and display, omaplfb is not needed
+  #DISPLAY_CONTROLLER_COMPONENT += dc_omapfb3_linux
+  #DISPLAY_CONTROLLER := omaplfb
 else
-SUPPORT_LINUX_USING_SHARED_WORKQUEUES := 1
-OMAP_NON_FLIP_DISPLAY := 1
-DISPLAY_CONTROLLER_COMPONENT += linux_framebuffer
-DISPLAY_CONTROLLER := pvrlfb
+  SUPPORT_LINUX_USING_SHARED_WORKQUEUES := 1
+  OMAP_NON_FLIP_DISPLAY := 1
+  DISPLAY_CONTROLLER_COMPONENT += linux_framebuffer
+  DISPLAY_CONTROLLER := pvrlfb
 endif
 
 ifeq ($(ARCH), arm64)
-#find the right number
+  #find the right number
   SYS_CFLAGS := -march=armv8-a
 else
   SYS_CFLAGS := -march=armv7-a
 endif
 
 UBUNTU_TOOLCHAIN :=
+
 ifeq ($(CROSS_COMPILE),)
-UBUNTU_TOOLCHAIN = 1
-endif
-ifeq ($(CROSS_COMPILE),arm-linux-gnueabi-)
-UBUNTU_TOOLCHAIN = 1
-endif
-ifeq ($(CROSS_COMPILE),arm-linux-gnueabihf-)
-UBUNTU_TOOLCHAIN = 1
-endif
-ifeq ($(CROSS_COMPILE),arm-none-linux-gnueabihf-)
-UBUNTU_TOOLCHAIN = 1
-endif
-ifeq ($(CROSS_COMPILE),arm-oe-linux-gnueabi-)
-UBUNTU_TOOLCHAIN = 1
+  UBUNTU_TOOLCHAIN = 1
+else ifeq ($(CROSS_COMPILE),arm-linux-gnueabi-)
+  UBUNTU_TOOLCHAIN = 1
+else ifeq ($(CROSS_COMPILE),arm-linux-gnueabihf-)
+  UBUNTU_TOOLCHAIN = 1
+else ifeq ($(CROSS_COMPILE),arm-none-linux-gnueabihf-)
+  UBUNTU_TOOLCHAIN = 1
+else ifeq ($(CROSS_COMPILE),arm-oe-linux-gnueabi-)
+  UBUNTU_TOOLCHAIN = 1
 endif
 
 ifeq ($(UBUNTU_TOOLCHAIN),)
-OPTIM := -Os
+  OPTIM := -Os
 
-ifneq ($(CROSS_COMPILE),)
-#check whether it should be trad
-ifeq ($(ARCH), arm64)
-#SYS_CFLAGS += -mtls-dialect=desc
-SUPPORT_NEON ?= 0
-else
-#SYS_CFLAGS += -mtls-dialect=arm
-SUPPORT_NEON ?= 1
-endif
-endif
+  ifneq ($(CROSS_COMPILE),)
+    #check whether it should be trad
+    ifeq ($(ARCH), arm64)
+      #SYS_CFLAGS += -mtls-dialect=desc
+      SUPPORT_NEON ?= 0
+    else
+      #SYS_CFLAGS += -mtls-dialect=arm
+      SUPPORT_NEON ?= 1
+    endif
+  endif
 
-ifeq ($(SUPPORT_NEON),1)
-SYS_CFLAGS += -ftree-vectorize -mfpu=neon -mfloat-abi=hard
-endif
+  ifeq ($(SUPPORT_NEON),1)
+    SYS_CFLAGS += -ftree-vectorize -mfpu=neon -mfloat-abi=hard
+  endif
 endif	# UBUNTU_TOOLCHAIN
 
 SYS_CXXFLAGS := $(SYS_CFLAGS)
@@ -181,66 +178,69 @@ SGX_DYNAMIC_TIMING_INFO := 1
 SYS_CUSTOM_POWERLOCK_WRAP := 1
 
 ifeq ($(OMAP_NON_FLIP_DISPLAY),1)
-OPK_DEFAULT := libpvrPVR2D_BLITWSEGL.so
+  OPK_DEFAULT := libpvrPVR2D_BLITWSEGL.so
 else
-OPK_DEFAULT := libpvrPVR2D_FLIPWSEGL.so
+  OPK_DEFAULT := libpvrPVR2D_FLIPWSEGL.so
 endif
 
 include ../common/xorg_test.mk
 
 ifneq ($(strip $(KERNELDIR)),)
-include ../kernel_version.mk
+  include ../kernel_version.mk
 
-XORG_EXPLICIT_PVR_SERVICES_LOAD := 1
-SUPPORT_DRI_DRM := 1
-LDM_PLATFORM := 1
-PVR_LDM_DEVICE_TREE := 1
-PVR_DRI_DRM_PLATFORM_DEV := 1
-SUPPORT_DMABUF := 1
-ifeq ($(TARGET_PRODUCT),ti335x)
-PVR_DRM_MODESET_DRIVER_NAME := tilcdc
-else
-ifeq ($(TARGET_PRODUCT),ti654x)
-PVR_DRM_MODESET_DRIVER_NAME := tidss
-else
-PVR_DRM_MODESET_DRIVER_NAME := omapdrm
-endif
-endif
-PVR_DRM_MODESET_MODULE_NAME := dumb
-# No display class driver.
-DISPLAY_CONTROLLER_COMPONENT :=
-DISPLAY_CONTROLLER :=
-ifeq ($(PVR_LWS_NODC),1)
-# No display class driver.
-DISPLAY_CONTROLLER :=
-else
-PVR_OMAPLFB_DRM_FB := 0
-PVR_OMAPLFB_DONT_USE_FB_PAN_DISPLAY := 1
-endif
+  XORG_EXPLICIT_PVR_SERVICES_LOAD := 1
+  SUPPORT_DRI_DRM := 1
+  LDM_PLATFORM := 1
+  PVR_LDM_DEVICE_TREE := 1
+  PVR_DRI_DRM_PLATFORM_DEV := 1
+  SUPPORT_DMABUF := 1
 
-OPK_DEFAULT := libpvrDRMWSEGL.so
-PVR_DRI_DRM_PLATFORM_DEV := 1
+  ifeq ($(TARGET_PRODUCT),ti335x)
+    PVR_DRM_MODESET_DRIVER_NAME := tilcdc
+  else
+    ifeq ($(TARGET_PRODUCT),ti654x)
+      PVR_DRM_MODESET_DRIVER_NAME := tidss
+    else
+      PVR_DRM_MODESET_DRIVER_NAME := omapdrm
+    endif
+  endif
 
-ifeq ($(PVR_LWS_NODC),)
-ifeq ($(SUPPORT_BUILD_XORG),1)
-# A client DRI authorisation failure, whilst switched away from the X Server
-# VT, prevents all other attempts at DRI authorisation, even after
-# switching back to the X server VT, so don't perform a DRM drop master
-# call.
-PVR_XORG_DONT_DROP_MASTER_IN_LEAVE_VT := 1
-XORG_PVR_VIDEO ?= omap4
+  PVR_DRM_MODESET_MODULE_NAME := dumb
+  # No display class driver.
+  DISPLAY_CONTROLLER_COMPONENT :=
+  DISPLAY_CONTROLLER :=
 
-ifneq ($(OMAP_NON_FLIP_DISPLAY),1)
-PVR_DISPLAY_CONTROLLER_DRM_IOCTL := 1
-endif
-endif # xorg isn't excluded
+  ifeq ($(PVR_LWS_NODC),1)
+    # No display class driver.
+    DISPLAY_CONTROLLER :=
+  else
+    PVR_OMAPLFB_DRM_FB := 0
+    PVR_OMAPLFB_DONT_USE_FB_PAN_DISPLAY := 1
+  endif
 
-ifeq ($(PVR_DRI_DRM_NOT_PCI),1)
-KERNEL_COMPONENTS += linux_drm
-EXTRA_KBUILD_SOURCE := $(KERNELDIR)
-endif
-KERNEL_COMPONENTS += $(DISPLAY_CONTROLLER)
-endif	# PVR_LWS_NODC
+  OPK_DEFAULT := libpvrDRMWSEGL.so
+  PVR_DRI_DRM_PLATFORM_DEV := 1
+
+  ifeq ($(PVR_LWS_NODC),)
+    ifeq ($(SUPPORT_BUILD_XORG),1)
+      # A client DRI authorisation failure, whilst switched away from the X Server
+      # VT, prevents all other attempts at DRI authorisation, even after
+      # switching back to the X server VT, so don't perform a DRM drop master
+      # call.
+      PVR_XORG_DONT_DROP_MASTER_IN_LEAVE_VT := 1
+      XORG_PVR_VIDEO ?= omap4
+
+      ifneq ($(OMAP_NON_FLIP_DISPLAY),1)
+        PVR_DISPLAY_CONTROLLER_DRM_IOCTL := 1
+      endif
+    endif # xorg isn't excluded
+
+    ifeq ($(PVR_DRI_DRM_NOT_PCI),1)
+      KERNEL_COMPONENTS += linux_drm
+      EXTRA_KBUILD_SOURCE := $(KERNELDIR)
+    endif
+    KERNEL_COMPONENTS += $(DISPLAY_CONTROLLER)
+  endif	# PVR_LWS_NODC
 endif	# KERNELDIR
 
 include ../config/core.mk
