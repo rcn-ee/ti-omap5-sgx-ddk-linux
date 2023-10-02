@@ -229,8 +229,7 @@ OSAllocPages_Impl(IMG_UINT32 ui32AllocFlags,
             if (!psLinuxMemArea)
             {
 #if defined(DEBUG_LINUX_MEM_AREAS)
-                dev_err(&gpsPVRLDMDev->dev, "CMA region is either exhausted \
-                        or not present\n");
+                dev_err(&gpsPVRLDMDev->dev, "CMA region is either exhausted or not present\n");
 #endif
                 psLinuxMemArea = NewAllocPagesLinuxMemArea(uiSize, ui32AllocFlags);
             }
