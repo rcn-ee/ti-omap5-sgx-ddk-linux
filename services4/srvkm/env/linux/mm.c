@@ -60,9 +60,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/dma-direct.h>
 
 #if defined(PVR_LINUX_MEM_AREA_POOL_ALLOW_SHRINK)
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,1,0))
 #include <linux/shrinker.h>
-#endif
 #endif
 
 #include "img_defs.h"
@@ -2588,34 +2586,12 @@ static IMG_VOID LinuxMMCleanup_MemRecords_ForEachVa(DEBUG_MEM_ALLOC_REC *psCurre
 
 
 #if defined(PVR_LINUX_MEM_AREA_POOL_ALLOW_SHRINK)
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,12,0))
-static int
-ShrinkPagePool(struct shrinker *psShrinker, struct shrink_control *psShrinkControl)
-{
-	if(psShrinkControl->nr_to_scan != 0)
-	{
-		return ScanObjectsInPagePool(psShrinker, psShrinkControl);
-	}
-	else
-	{
-		/* No pages are being reclaimed so just return the page count. */
-		return CountObjectsInPagePool(psShrinker, psShrinkControl);
-	}
-}
-
-static struct shrinker g_sShrinker =
-{
-        .shrink = ShrinkPagePool,
-        .seeks = DEFAULT_SEEKS
-};
-#else
 static struct shrinker g_sShrinker = 
 {
 	.count_objects = CountObjectsInPagePool,
 	.scan_objects = ScanObjectsInPagePool,
 	.seeks = DEFAULT_SEEKS 
 };
-#endif
 
 static IMG_BOOL g_bShrinkerRegistered;
 #endif

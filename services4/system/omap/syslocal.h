@@ -73,9 +73,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define	PVR_OMAP4_TIMING_PRCM
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,13))
-#include <plat/gpu.h>
-#endif
 #if !defined(PVR_NO_OMAP_TIMER)
 #define	PVR_OMAP_USE_DM_TIMER_API
 #include <plat/dmtimer.h>

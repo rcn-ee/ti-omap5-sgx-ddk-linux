@@ -47,7 +47,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "syscommon.h"
 #include "pvr_linux_fence.h"
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0))
 #include <linux/types.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
@@ -1853,89 +1852,3 @@ int PVRLinuxFenceInit(void)
 #endif
 	return 0;
 }
-#else	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17)) */
-IMG_HANDLE PVRLinuxFenceContextCreate(PVRSRV_KERNEL_SYNC_INFO *psSyncInfo, IMG_HANDLE hImport)
-{
-	(void) psSyncInfo;
-	(void) hImport;
-
-	return (IMG_HANDLE)(IMG_UINTPTR_T)0xbad;
-}
-
-void PVRLinuxFenceContextDestroy(IMG_HANDLE hFenceContext)
-{
-	(void) hFenceContext;
-}
-
-IMG_UINT32 PVRLinuxFenceNumResvObjs(IMG_BOOL *pbBlockingFences,
-				IMG_UINT32 ui32NumSrcSyncs,
-				IMG_HANDLE *phSrcSyncInfo,
-				const IMG_BOOL *pbSrcEnabled,
-				IMG_UINT32 ui32NumDstSyncs,
-				IMG_HANDLE *phDstSyncInfo,
-				const IMG_BOOL *pbDstEnabled)
-{
-	(void) pbBlockingFences;
-	(void) ui32NumSrcSyncs;
-	(void) phSrcSyncInfo;
-	(void) pbSrcEnabled;
-	(void) ui32NumDstSyncs;
-	(void) phDstSyncInfo;
-	(void) pbDstEnabled;
-
-	return PVRSRV_OK;
-}
-
-PVRSRV_ERROR PVRLinuxFenceProcess(IMG_UINT32 *pui32Tag,
-				IMG_UINT32 ui32NumResvObjs,
-				IMG_BOOL bBlockingFences,
-				IMG_UINT32 ui32NumSrcSyncs,
-				IMG_HANDLE *phSrcSyncInfo,
-				const IMG_BOOL *pbSrcEnabled,
-				IMG_UINT32 ui32NumDstSyncs,
-				IMG_HANDLE *phDstSyncInfo,
-				const IMG_BOOL *pbDstEnabled)
-{
-	(void) pui32Tag;
-	(void) ui32NumResvObjs;
-	(void) bBlockingFences;
-	(void) ui32NumSrcSyncs;
-	(void) phSrcSyncInfo;
-	(void) pbSrcEnabled;
-	(void) ui32NumDstSyncs;
-	(void) phDstSyncInfo;
-	(void) pbDstEnabled;
-
-	return PVRSRV_OK;
-}
-
-void PVRLinuxFenceRelease(IMG_UINT32 ui32Tag,
-				IMG_UINT32 ui32NumSrcSyncs,
-				IMG_HANDLE *phSrcSyncInfo,
-				const IMG_BOOL *pbSrcEnabled,
-				IMG_UINT32 ui32NumDstSyncs,
-				IMG_HANDLE *phDstSyncInfo,
-				const IMG_BOOL *pbDstEnabled)
-{
-	(void) ui32Tag;
-	(void) ui32NumSrcSyncs;
-	(void) phSrcSyncInfo;
-	(void) pbSrcEnabled;
-	(void) ui32NumDstSyncs;
-	(void) phDstSyncInfo;
-	(void) pbDstEnabled;
-}
-
-void PVRLinuxFenceCheckAll(void)
-{
-}
-
-int PVRLinuxFenceInit(void)
-{
-	return 0;
-}
-
-void PVRLinuxFenceDeInit(void)
-{
-}
-#endif	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17)) */

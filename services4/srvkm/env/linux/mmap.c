@@ -56,9 +56,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <drm/drm_file.h>
 #include <drm/drm_drv.h>
 #include <drm/drm_device.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0))
 #include <drm/drm_legacy.h>
-#endif
 #endif
 
 #ifdef CONFIG_ARCH_OMAP5
@@ -87,7 +85,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #error "The mmap code requires PVR_SECURE_HANDLES"
 #endif
 
-#if defined(SUPPORT_DRI_DRM) && (LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0))
+#if defined(SUPPORT_DRI_DRM)
 static inline int drm_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	return drm_legacy_mmap(filp, vma);
@@ -1066,12 +1064,7 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
     PVR_DPF((PVR_DBG_MESSAGE, "%s: Mapped psLinuxMemArea 0x%p\n",
          __FUNCTION__, psOffsetStruct->psLinuxMemArea));
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0))
-    /* This is probably superfluous and implied by VM_IO */
-    ps_vma->vm_flags |= VM_RESERVED;
-#else
     ps_vma->vm_flags |= VM_DONTDUMP;
-#endif
     ps_vma->vm_flags |= VM_IO;
 
     /*

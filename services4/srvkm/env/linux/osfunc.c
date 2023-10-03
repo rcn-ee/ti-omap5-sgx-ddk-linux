@@ -43,9 +43,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <asm/io.h>
 #include <asm/page.h>
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,2,0))
-#include <asm/system.h>
-#endif
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0))
 #include <asm/set_memory.h>
 #else
@@ -3908,11 +3905,6 @@ error:
 
 #if ! (defined(__arm__) || defined(__aarch64__))
 # define USE_VIRTUAL_CACHE_OP
-#elif LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
-# define USE_VIRTUAL_CACHE_OP
-# if defined(CONFIG_OUTER_CACHE)
-#  define USE_PHYSICAL_CACHE_OP
-# endif
 #else
 # define USE_PHYSICAL_CACHE_OP
 #endif
@@ -4495,20 +4487,6 @@ static inline size_t pvr_dmac_range_len(const void *pvStart, const void *pvEnd)
 	return (size_t)((char *)pvEnd - (char *)pvStart);
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
-
-static void pvr_dmac_inv_range(const void *pvStart, const void *pvEnd)
-{
-	dmac_map_area(pvStart, pvr_dmac_range_len(pvStart, pvEnd), DMA_FROM_DEVICE);
-}
-
-static void pvr_dmac_clean_range(const void *pvStart, const void *pvEnd)
-{
-	dmac_map_area(pvStart, pvr_dmac_range_len(pvStart, pvEnd), DMA_TO_DEVICE);
-}
-
-#else /* LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0) */
-
 static void pvr_flush_range(phys_addr_t pStart, phys_addr_t pEnd)
 {
 #if defined(__aarch64__) || (LINUX_VERSION_CODE >= KERNEL_VERSION(6,0,0))
@@ -4542,8 +4520,6 @@ static void pvr_invalidate_range(phys_addr_t pStart, phys_addr_t pEnd)
 #endif
 }
 
-#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0) */
-
 IMG_BOOL OSFlushCPUCacheRangeKM(IMG_HANDLE hOSMemHandle,
 								IMG_UINT32 ui32ByteOffset,
 								IMG_VOID *pvRangeAddrStart,
@@ -4551,13 +4527,7 @@ IMG_BOOL OSFlushCPUCacheRangeKM(IMG_HANDLE hOSMemHandle,
 {
 	return CheckExecuteCacheOp(hOSMemHandle, ui32ByteOffset,
 	                           pvRangeAddrStart, ui32Length,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
 	                           pvr_flush_range
-#elif defined(CONFIG_OUTER_CACHE)
-	                           dmac_flush_range, outer_flush_range
-#else
-	                           dmac_flush_range
-#endif
 	                           );
 }
 
@@ -4568,13 +4538,7 @@ IMG_BOOL OSCleanCPUCacheRangeKM(IMG_HANDLE hOSMemHandle,
 {
 	return CheckExecuteCacheOp(hOSMemHandle, ui32ByteOffset,
 	                           pvRangeAddrStart, ui32Length,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
 	                           pvr_clean_range
-#elif defined(CONFIG_OUTER_CACHE)
-	                           pvr_dmac_clean_range, outer_clean_range
-#else
-	                           pvr_dmac_clean_range
-#endif
 	                           );
 }
 
@@ -4585,13 +4549,7 @@ IMG_BOOL OSInvalidateCPUCacheRangeKM(IMG_HANDLE hOSMemHandle,
 {
 	return CheckExecuteCacheOp(hOSMemHandle, ui32ByteOffset,
 	                           pvRangeAddrStart, ui32Length,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
 	                           pvr_invalidate_range
-#elif defined(CONFIG_OUTER_CACHE)
-	                           pvr_dmac_inv_range, outer_inv_range
-#else
-	                           pvr_dmac_inv_range
-#endif
 	                           );
 }
 

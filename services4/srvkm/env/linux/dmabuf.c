@@ -339,7 +339,6 @@ error:
 	return eError;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0))
 IMG_HANDLE DmaBufGetNativeSyncHandle(IMG_HANDLE hImport)
 {
 	struct dmabuf_import *import;
@@ -365,18 +364,5 @@ void DmaBufFreeNativeSyncHandle(IMG_HANDLE hSync)
 
 	kfree(info);
 }
-#else	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)) */
-IMG_HANDLE DmaBufGetNativeSyncHandle(IMG_HANDLE hImport)
-{
-	(void) hImport;
-
-	return IMG_NULL;
-}
-
-void DmaBufFreeNativeSyncHandle(IMG_HANDLE hSync)
-{
-	(void) hSync;
-}
-#endif	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)) */
 
 #endif /* defined(SUPPORT_DMABUF) */

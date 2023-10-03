@@ -82,9 +82,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_drm_mod.h"
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0))
 #define DRM_ARRAY_SIZE(x) ARRAY_SIZE(x)
-#endif
 
 #if (defined(PVR_LDM_PLATFORM_PRE_REGISTERED) || defined(PVR_LDM_DEVICE_TREE)) && !defined(NO_HARDWARE)
 #define PVR_USE_PRE_REGISTERED_PLATFORM_DEV
@@ -119,13 +117,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #undef	PVR_DRI_DRM_USE_POST_CLOSE
 #define	PVR_DRI_DRM_USE_POST_CLOSE
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
 #define PVR_DRM_DRIVER_RENDER	DRIVER_RENDER
 #define PVR_DRM_RENDER_ALLOW	DRM_RENDER_ALLOW
-#else
-#define PVR_DRM_DRIVER_RENDER	0
-#define PVR_DRM_RENDER_ALLOW	0
-#endif
 
 DECLARE_WAIT_QUEUE_HEAD(sWaitForInit);
 
@@ -482,7 +475,6 @@ static PVRSRV_DRM_PLUGIN sPVRDrmPlugin =
 };
 #else	/* defined(SUPPORT_DRI_DRM_PLUGIN) */
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0))
 #if defined(CONFIG_COMPAT)
 static long pvr_compat_ioctl(struct file *file, unsigned int cmd,
 			     unsigned long arg)
@@ -513,11 +505,7 @@ static const struct file_operations sPVRFileOps =
 #endif
 	.mmap = PVRMMap,
 	.poll = drm_poll,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,12,0))
-	.fasync = drm_fasync,
-#endif
 };
-#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0)) */
 
 static struct drm_driver sPVRDrmDriver = 
 {
@@ -538,26 +526,9 @@ static struct drm_driver sPVRDrmDriver =
 	.resume = PVRSRVDriverResume,
 #endif
 	.ioctls = sPVRDrmIoctls,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0))
 	.fops = &sPVRFileOps,
-#else
-	.fops = 
-	{
-		.owner = THIS_MODULE,
-		.open = drm_open,
-#if defined(PVR_DRI_DRM_USE_POST_CLOSE)
-		.release = drm_release,
-#else
-		.release = PVRSRVDrmRelease,
-#endif
-		PVR_DRM_FOPS_IOCTL = drm_ioctl,
-		.mmap = PVRMMap,
-		.poll = drm_poll,
-		.fasync = drm_fasync,
-	},
-#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0)) */
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)) && (LINUX_VERSION_CODE < KERNEL_VERSION(4,5,0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,5,0))
 #if defined(LDM_PLATFORM)
 	.set_busid = drm_platform_set_busid,
 #else

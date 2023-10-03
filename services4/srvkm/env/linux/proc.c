@@ -128,9 +128,7 @@ static void ProcSeqShowSysNodes(struct seq_file *sfile,void* el);
 static void* ProcSeqOff2ElementSysNodes(struct seq_file * sfile, loff_t off);
 
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-#define PDE_DATA(x)    PDE(x)->data;
-#elif (LINUX_VERSION_CODE < KERNEL_VERSION(5,16,0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,16,0))
 // defined in proc_fs.h
 #else
 #define PDE_DATA pde_data	// renamed to lower case
@@ -724,11 +722,7 @@ IMG_INT CreateProcEntries(IMG_VOID)
 *****************************************************************************/
 IMG_VOID RemoveProcEntrySeq(struct pvr_proc_dir_entry* ppde)
 {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-	remove_proc_entry(ppde->pde->name, dir);
-#else
 	proc_remove(ppde->pde);
-#endif
 	kfree(ppde);
 }
 
@@ -767,73 +761,16 @@ IMG_VOID RemovePerProcessProcEntrySeq(struct pvr_proc_dir_entry* ppde)
     if (psPerProc->psProcDir)
     {
         PVR_DPF((PVR_DBG_MESSAGE, "Removing per-process proc entry"));
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-        remove_proc_entry(ppde->pde->name, psPerProc->psProcDir);
-#else
 	proc_remove(ppde->pde);
-#endif
 	kfree(ppde);
     }
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-/*!
-******************************************************************************
-
- @Function : RemoveProcEntry
-
- @Description
-
- Remove a single node under /proc/pvr.
-
- @Input name : the name of the node to remove
-
- @Return nothing
-
-*****************************************************************************/
-static IMG_VOID RemoveProcEntry(const IMG_CHAR * name)
-{
-    if (dir)
-    {
-        remove_proc_entry(name, dir);
-        PVR_DPF((PVR_DBG_MESSAGE, "Removing /proc/%s/%s", PVRProcDirRoot, name));
-    }
-}
-
-
-/*!
-******************************************************************************
-
- @Function : RemovePerProcessProcDir
-
- @Description
-
- Remove the per process directorty under /proc/pvr.
-
- @Input psPerProc : environment specific per process data
-
- @Return nothing
-
-*****************************************************************************/
-IMG_VOID RemovePerProcessProcDir(PVRSRV_ENV_PER_PROCESS_DATA *psPerProc)
-{
-    if (psPerProc->psProcDir)
-    {
-        while (psPerProc->psProcDir->subdir)
-        {
-            PVR_DPF((PVR_DBG_WARNING, "Belatedly removing /proc/%s/%s/%s", PVRProcDirRoot, psPerProc->psProcDir->name, psPerProc->psProcDir->subdir->name));
-
-            RemoveProcEntry(psPerProc->psProcDir->subdir->name);
-        }
-        RemoveProcEntry(psPerProc->psProcDir->name);
-    }
-}
-#else
 IMG_VOID RemovePerProcessProcDir(PVRSRV_ENV_PER_PROCESS_DATA *psPerProc)
 {
 	proc_remove(psPerProc->psProcDir);
 }
-#endif
+
 /*!
 ******************************************************************************
 
@@ -864,18 +801,7 @@ IMG_VOID RemoveProcEntries(IMG_VOID)
 	RemoveProcEntrySeq(g_pProcVersion);
 	RemoveProcEntrySeq(g_pProcSysNodes);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-	while (dir->subdir)
-	{
-		PVR_DPF((PVR_DBG_WARNING, "Belatedly removing /proc/%s/%s", PVRProcDirRoot, dir->subdir->name));
-
-		RemoveProcEntry(dir->subdir->name);
-	}
-	remove_proc_entry(PVRProcDirRoot, NULL);
-#else
 	proc_remove(dir);
-#endif
-
 }
 
 /*************************************************************************/ /*!

@@ -302,7 +302,7 @@ static PVRSRV_ERROR AcquireGPTimer(SYS_SPECIFIC_DATA *psSysSpecData)
 	 * clock to OMAP_TIMER_SRC_32_KHZ.
 	 * Not calling omap_dm_timer_set_source doesn't help.
 	 */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)) || !defined(MODULE)
+#if !defined(MODULE)
 	/*
 	 * This code could try requesting registers 9, 10, and 11,
 	 * stopping at the first succesful request.  We'll stick with
@@ -330,9 +330,9 @@ static PVRSRV_ERROR AcquireGPTimer(SYS_SPECIFIC_DATA *psSysSpecData)
 	 * physical address of the counter register.
 	 */
 	psSysSpecData->sTimerRegPhysBase.uiAddr = SYS_OMAP_GPTIMER_REGS_SYS_PHYS_BASE;
-#else	/* (LINUX_VERSION_CODE <= KERNEL_VERSION(3,4,0)) || !defined(MODULE) */
+#else	/* !defined(MODULE) */
 	(void)psSysSpecData;
-#endif	/* (LINUX_VERSION_CODE <= KERNEL_VERSION(3,4,0)) || !defined(MODULE) */
+#endif	/* !defined(MODULE) */
 
 	return PVRSRV_OK;
 }

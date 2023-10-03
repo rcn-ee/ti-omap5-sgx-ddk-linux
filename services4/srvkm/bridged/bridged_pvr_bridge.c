@@ -98,9 +98,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC) || defined(PVR_ANDROID_NATIVE_WINDOW_HAS_FENCE)
 #include <linux/file.h>
 #include <linux/version.h>
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))
-#include <linux/sync.h>
-#elif (LINUX_VERSION_CODE < KERNEL_VERSION(4,9,0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,9,0))
 #include <../drivers/staging/android/sync.h>
 #else
 #include <../drivers/dma-buf/sync_debug.h>
