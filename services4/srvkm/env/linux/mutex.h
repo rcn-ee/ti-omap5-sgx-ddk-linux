@@ -45,32 +45,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/version.h>
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,15))
 #include <linux/mutex.h>
-#else
-#include <asm/semaphore.h>
-#endif
-
-
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,15))
 
 typedef struct mutex PVRSRV_LINUX_MUTEX;
-
-#else /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,15)) */
-
-
-typedef struct {
-    struct semaphore sSemaphore;
-    /* since Linux's struct semaphore is intended to be
-     * opaque we don't poke inside for the count and
-     * instead we track it outselves. (So we can implement
-     * LinuxIsLockedMutex)
-     */
-    atomic_t Count;
-}PVRSRV_LINUX_MUTEX;
-
-#endif
 
 enum PVRSRV_MUTEX_LOCK_CLASS
 {

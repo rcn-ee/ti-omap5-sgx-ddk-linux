@@ -41,30 +41,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/version.h>
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38))
-#ifndef AUTOCONF_INCLUDED
-#include <linux/config.h>
-#endif
-#endif
-
 #include <linux/mm.h>
 #include <linux/module.h>
 #include <linux/vmalloc.h>
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0))
-#include <linux/wrapper.h>
-#endif
 #include <linux/slab.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,26))
 #include <linux/highmem.h>
-#endif
 #include <asm/io.h>
 #include <asm/page.h>
 #include <asm/shmparam.h>
 #include <asm/pgtable.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,22))
 #include <linux/sched.h>
 #include <asm/current.h>
-#endif
 #if defined(SUPPORT_DRI_DRM)
 #include <drm/drm_file.h>
 #include <drm/drm_drv.h>
@@ -926,7 +913,6 @@ MMapVClose(struct vm_area_struct* ps_vma)
     LinuxUnLockMutex(&g_sMMapMutex);
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,26))
 /*
  * This vma operation is used to read data from mmap regions. It is called
  * by access_process_vm, which is called to handle PTRACE_PEEKDATA ptrace
@@ -987,15 +973,12 @@ exit_unlock:
 	LinuxUnLockMutex(&g_sMMapMutex);
     return iRetVal;
 }
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,26) */
 
 static struct vm_operations_struct MMapIOOps =
 {
 	.open=MMapVOpen,
 	.close=MMapVClose,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,26))
 	.access=MMapVAccess,
-#endif
 };
 
 

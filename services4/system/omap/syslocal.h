@@ -54,24 +54,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 #include <asm/atomic.h>
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,26))
 #include <linux/semaphore.h>
 #include <linux/resource.h>
-#else /* (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,26)) */
-#include <asm/semaphore.h>
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,22))
-#include <asm/arch/resource.h>
-#endif /* (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,22)) */
-#endif /* (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,26)) */
 
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35))
 #if !defined(LDM_PLATFORM)
 #error "LDM_PLATFORM must be set"
 #endif
 #define	PVR_LINUX_DYNAMIC_SGX_RESOURCE_INFO
 #include <linux/platform_device.h>
-#endif
 
 #if ((defined(DEBUG) || defined(TIMING)) && \
     (LINUX_VERSION_CODE == KERNEL_VERSION(2,6,34))) && \
@@ -83,14 +73,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define	PVR_OMAP4_TIMING_PRCM
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35))
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,13))
 #include <plat/gpu.h>
 #endif
 #if !defined(PVR_NO_OMAP_TIMER)
 #define	PVR_OMAP_USE_DM_TIMER_API
 #include <plat/dmtimer.h>
-#endif
 #endif
 
 #if !defined(PVR_NO_OMAP_TIMER)

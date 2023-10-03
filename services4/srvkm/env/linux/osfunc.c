@@ -41,15 +41,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/version.h>
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38))
-#ifndef AUTOCONF_INCLUDED
-#include <linux/config.h>
-#endif
-#endif
-
 #include <asm/io.h>
 #include <asm/page.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,22)) && (LINUX_VERSION_CODE < KERNEL_VERSION(3,2,0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,2,0))
 #include <asm/system.h>
 #endif
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0))
@@ -113,11 +107,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_linux_fence.h"
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27))
 #define ON_EACH_CPU(func, info, wait) on_each_cpu(func, info, wait)
-#else
-#define ON_EACH_CPU(func, info, wait) on_each_cpu(func, info, 0, wait)
-#endif
 
 #if defined(PVR_LINUX_USING_WORKQUEUES) && !defined(CONFIG_PREEMPTION) && !defined(CONFIG_PREEMPT_VOLUNTARY)
 /* 
@@ -174,15 +164,6 @@ PVRSRV_ERROR OSAllocMem_Impl(IMG_UINT32 ui32Flags, IMG_SIZE_T uiSize, IMG_PVOID 
     return PVRSRV_OK;
 }
 
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,24))
-
-static inline int is_vmalloc_addr(const void *pvCpuVAddr)
-{
-	unsigned long lAddr = (unsigned long)pvCpuVAddr;
-	return lAddr >= VMALLOC_START && lAddr < VMALLOC_END;
-}
-
-#endif /* (LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,24)) */
 
 #if !defined(DEBUG_LINUX_MEMORY_ALLOCATIONS)
 PVRSRV_ERROR OSFreeMem_Impl(IMG_UINT32 ui32Flags, IMG_SIZE_T uiSize, IMG_PVOID pvCpuVAddr, IMG_HANDLE hBlockAlloc)
@@ -864,15 +845,7 @@ IMG_UINT32 OSGetCurrentProcessIDKM(IMG_VOID)
         return KERNEL_ID;
     }
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0))
-    return (IMG_UINT32)current->pgrp;
-#else
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24))
     return (IMG_UINT32)task_tgid_nr(current);
-#else
-    return (IMG_UINT32)current->tgid;
-#endif
-#endif
 }
 
 #if defined(MEM_TRACK_INFO_DEBUG)
@@ -915,7 +888,6 @@ IMG_UINT32 OSGetPageSize(IMG_VOID)
 #endif
 }
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,0))
 /*!
 ******************************************************************************
 
@@ -926,11 +898,7 @@ IMG_UINT32 OSGetPageSize(IMG_VOID)
  @Return
 
 ******************************************************************************/
-static irqreturn_t DeviceISRWrapper(int irq, void *dev_id
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19))
-        , struct pt_regs *regs
-#endif
-        )
+static irqreturn_t DeviceISRWrapper(int irq, void *dev_id)
 {
     PVRSRV_DEVICE_NODE *psDeviceNode = (PVRSRV_DEVICE_NODE*)dev_id;
     SYS_DATA *psSysData = psDeviceNode->psSysData;
@@ -938,9 +906,6 @@ static irqreturn_t DeviceISRWrapper(int irq, void *dev_id
     IMG_BOOL bStatus = IMG_FALSE;
 
     PVR_UNREFERENCED_PARAMETER(irq);
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19))
-    PVR_UNREFERENCED_PARAMETER(regs);
-#endif	
 
     if (psEnvData->bLISRInstalled)
     {
@@ -951,9 +916,7 @@ static irqreturn_t DeviceISRWrapper(int irq, void *dev_id
         }
     }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0))
     return bStatus ? IRQ_HANDLED : IRQ_NONE;
-#endif
 }
 
 
@@ -971,21 +934,13 @@ static irqreturn_t DeviceISRWrapper(int irq, void *dev_id
  @Return
 
 ******************************************************************************/
-static irqreturn_t SystemISRWrapper(int irq, void *dev_id
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19))
-        , struct pt_regs *regs
-#endif
-        )
+static irqreturn_t SystemISRWrapper(int irq, void *dev_id)
 {
     SYS_DATA *psSysData = (SYS_DATA *)dev_id;
     ENV_DATA *psEnvData = (ENV_DATA *)psSysData->pvEnvSpecificData;
     IMG_BOOL bStatus = IMG_FALSE;
 
     PVR_UNREFERENCED_PARAMETER(irq);
-
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19))
-    PVR_UNREFERENCED_PARAMETER(regs);
-#endif
 
     if (psEnvData->bLISRInstalled)
     {
@@ -996,9 +951,7 @@ static irqreturn_t SystemISRWrapper(int irq, void *dev_id
         }
     }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0))
     return bStatus ? IRQ_HANDLED : IRQ_NONE;
-#endif
 }
 /*!
 ******************************************************************************
@@ -1031,13 +984,7 @@ PVRSRV_ERROR OSInstallDeviceLISR(IMG_VOID *pvSysData,
 
     PVR_TRACE(("Installing device LISR %s on IRQ %d with cookie %p", pszISRName, ui32Irq, pvDeviceNode));
 
-    if(request_irq(ui32Irq, DeviceISRWrapper,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22))
-        SA_SHIRQ
-#else
-        IRQF_SHARED
-#endif
-        , pszISRName, pvDeviceNode))
+    if(request_irq(ui32Irq, DeviceISRWrapper, IRQF_SHARED, pszISRName, pvDeviceNode))
     {
         PVR_DPF((PVR_DBG_ERROR,"OSInstallDeviceLISR: Couldn't install device LISR on IRQ %d", ui32Irq));
 
@@ -1110,13 +1057,7 @@ PVRSRV_ERROR OSInstallSystemLISR(IMG_VOID *pvSysData, IMG_UINT32 ui32Irq)
 
     PVR_TRACE(("Installing system LISR on IRQ %d with cookie %p", ui32Irq, pvSysData));
 
-    if(request_irq(ui32Irq, SystemISRWrapper,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22))
-        SA_SHIRQ
-#else
-        IRQF_SHARED
-#endif
-        , PVRSRV_MODNAME, pvSysData))
+    if(request_irq(ui32Irq, SystemISRWrapper, IRQF_SHARED, PVRSRV_MODNAME, pvSysData))
     {
         PVR_DPF((PVR_DBG_ERROR,"OSInstallSystemLISR: Couldn't install system LISR on IRQ %d", ui32Irq));
 
@@ -1176,13 +1117,7 @@ PVRSRV_ERROR OSUninstallSystemLISR(IMG_VOID *pvSysData)
  @Return   error status 
 
 ******************************************************************************/
-static void MISRWrapper(
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,20))
-			void *data
-#else
-			struct work_struct *data
-#endif
-)
+static void MISRWrapper(struct work_struct *data)
 {
 	ENV_DATA *psEnvData = container_of(data, ENV_DATA, sMISRWork);
 	SYS_DATA *psSysData  = (SYS_DATA *)psEnvData->pvMISRData;
@@ -1231,11 +1166,7 @@ PVRSRV_ERROR OSInstallMISR(IMG_VOID *pvSysData)
 		return PVRSRV_ERROR_UNABLE_TO_CREATE_THREAD;
 	}
 
-	INIT_WORK(&psEnvData->sMISRWork, MISRWrapper
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,20))
-		, (void *)&psEnvData->sMISRWork
-#endif
-				);
+	INIT_WORK(&psEnvData->sMISRWork, MISRWrapper);
 
 	psEnvData->pvMISRData = pvSysData;
 	psEnvData->bMISRInstalled = IMG_TRUE;
@@ -1315,13 +1246,7 @@ PVRSRV_ERROR OSScheduleMISR(IMG_VOID *pvSysData)
  @Return   error status 
 
 ******************************************************************************/
-static void MISRWrapper(
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,20))
-			void *data
-#else
-			struct work_struct *data
-#endif
-)
+static void MISRWrapper(struct work_struct *data)
 {
 	ENV_DATA *psEnvData = container_of(data, ENV_DATA, sMISRWork);
 	SYS_DATA *psSysData  = (SYS_DATA *)psEnvData->pvMISRData;
@@ -1355,11 +1280,7 @@ PVRSRV_ERROR OSInstallMISR(IMG_VOID *pvSysData)
 
 	PVR_TRACE(("Installing MISR with cookie %p", pvSysData));
 
-	INIT_WORK(&psEnvData->sMISRWork, MISRWrapper
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,20))
-		, (void *)&psEnvData->sMISRWork
-#endif
-				);
+	INIT_WORK(&psEnvData->sMISRWork, MISRWrapper);
 
 	psEnvData->pvMISRData = pvSysData;
 	psEnvData->bMISRInstalled = IMG_TRUE;
@@ -1544,18 +1465,14 @@ PVRSRV_ERROR OSScheduleMISR(IMG_VOID *pvSysData)
 #endif /* #if defined(PVR_LINUX_MISR_USING_WORKQUEUE) */
 #endif /* #if defined(PVR_LINUX_MISR_USING_PRIVATE_WORKQUEUE) */
 
-#endif /* #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,20)) */
 
 IMG_VOID OSPanic(IMG_VOID)
 {
 	BUG();
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,22))
 #define	OS_TAS(p)	xchg((p), 1)
-#else
-#define	OS_TAS(p)	tas(p)
-#endif
+
 /*!
 ******************************************************************************
 
@@ -2269,7 +2186,7 @@ IMG_VOID OSWriteHWReg(IMG_PVOID pvLinRegBaseAddr, IMG_UINT32 ui32Offset, IMG_UIN
 #endif
 }
 
-#if defined(CONFIG_PCI) && (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,14))
+#if defined(CONFIG_PCI)
 
 /*!
 ******************************************************************************
@@ -2619,12 +2536,11 @@ PVRSRV_ERROR OSPCIReleaseDev(PVRSRV_PCI_DEV_HANDLE hPVRPCI)
     }
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29))
     if (psPVRPCI->ePCIFlags & HOST_PCI_INIT_FLAG_BUS_MASTER)	/* PRQA S 3358 */ /* misuse of enums */
     {
         pci_clear_master(psPVRPCI->psPCIDev);
     }
-#endif
+
     pci_disable_device(psPVRPCI->psPCIDev);
 
     OSFreeMem(PVRSRV_OS_PAGEABLE_HEAP, sizeof(*psPVRPCI), (IMG_VOID *)psPVRPCI, IMG_NULL);
@@ -2734,16 +2650,8 @@ PVRSRV_ERROR OSPCIResumeDev(PVRSRV_PCI_DEV_HANDLE hPVRPCI)
             return PVRSRV_ERROR_UNKNOWN_POWER_STATE;
     }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,38))
+
     pci_restore_state(psPVRPCI->psPCIDev);
-#else
-    err = pci_restore_state(psPVRPCI->psPCIDev);
-    if (err != 0)
-    {
-        PVR_DPF((PVR_DBG_ERROR, "OSPCIResumeDev: pci_restore_state failed (%d)", err));
-        return PVRSRV_ERROR_PCI_CALL_FAILED;
-    }
-#endif
 
     err = pci_enable_device(psPVRPCI->psPCIDev);
     if (err != 0)
@@ -2772,7 +2680,7 @@ PVRSRV_ERROR OSPCIResumeDev(PVRSRV_PCI_DEV_HANDLE hPVRPCI)
     return PVRSRV_OK;
 }
 
-#endif /* #if defined(CONFIG_PCI) && (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,0)) */
+#endif /* #if defined(CONFIG_PCI) */
 
 #define	OS_MAX_TIMERS	8
 
@@ -2799,13 +2707,7 @@ static TIMER_CALLBACK_DATA sTimers[OS_MAX_TIMERS];
 #if defined(PVR_LINUX_TIMERS_USING_WORKQUEUES) || defined(PVR_LINUX_TIMERS_USING_SHARED_WORKQUEUE)
 DEFINE_MUTEX(sTimerStructLock);
 #else
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,39))
-/* The lock is used to control access to sTimers */
-/* PRQA S 0671,0685 1 */ /* C99 macro not understood by QAC */
-static spinlock_t sTimerStructLock = SPIN_LOCK_UNLOCKED;
-#else
 static DEFINE_SPINLOCK(sTimerStructLock);
-#endif
 #endif
 
 static void OSTimerCallbackBody(TIMER_CALLBACK_DATA *psTimerCBData)
@@ -3474,7 +3376,6 @@ typedef struct _sWrapMemInfo_
 ******************************************************************************/
 static IMG_BOOL CPUVAddrToPFN(struct vm_area_struct *psVMArea, IMG_UINTPTR_T uCPUVAddr, IMG_UINT32 *pui32PFN, struct page **ppsPage)
 {
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,10))
     pgd_t *psPGD;
     pud_t *psPUD;
     pmd_t *psPMD;
@@ -3527,9 +3428,6 @@ static IMG_BOOL CPUVAddrToPFN(struct vm_area_struct *psVMArea, IMG_UINTPTR_T uCP
     pte_unmap_unlock(psPTE, psPTLock);
 
     return bRet;
-#else
-    return IMG_FALSE;
-#endif
 }
 
 /*!
@@ -4051,11 +3949,7 @@ IMG_VOID *FindMMapBaseVAddr(struct list_head *psMMapOffsetStructList,
 
 #if defined(USE_PHYSICAL_CACHE_OP)
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)
 typedef void (*PhysicalCacheOp_t)(phys_addr_t uStart, phys_addr_t uEnd);
-#else
-typedef void (*PhysicalCacheOp_t)(unsigned long ulStart, unsigned long ulEnd);
-#endif
 
 /* 
 	Note: use IMG_CPU_PHYADDR to return CPU Phys Addresses, and not just 'unsigned long',
@@ -4584,8 +4478,7 @@ IMG_VOID OSCleanCPUCacheKM(IMG_VOID)
 IMG_VOID OSFlushCPUCacheKM(IMG_VOID)
 {
 	ON_EACH_CPU(per_cpu_cache_flush, NULL, 1);
-#if defined(CONFIG_OUTER_CACHE) && \
-	(LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37))
+#if defined(CONFIG_OUTER_CACHE)
 	/* To use the "deferred flush" (not clean) DDK feature you need a kernel
 	 * implementation of outer_flush_all() for ARM CPUs with an outer cache
 	 * controller (e.g. PL310, common with Cortex A9 and later).
@@ -4597,31 +4490,21 @@ IMG_VOID OSFlushCPUCacheKM(IMG_VOID)
 #endif
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34))
 static inline size_t pvr_dmac_range_len(const void *pvStart, const void *pvEnd)
 {
 	return (size_t)((char *)pvEnd - (char *)pvStart);
 }
-#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0)
 
 static void pvr_dmac_inv_range(const void *pvStart, const void *pvEnd)
 {
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,34))
-	dmac_inv_range(pvStart, pvEnd);
-#else
 	dmac_map_area(pvStart, pvr_dmac_range_len(pvStart, pvEnd), DMA_FROM_DEVICE);
-#endif
 }
 
 static void pvr_dmac_clean_range(const void *pvStart, const void *pvEnd)
 {
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,34))
-	dmac_clean_range(pvStart, pvEnd);
-#else
 	dmac_map_area(pvStart, pvr_dmac_range_len(pvStart, pvEnd), DMA_TO_DEVICE);
-#endif
 }
 
 #else /* LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0) */
@@ -4731,31 +4614,19 @@ static inline size_t pvr_dma_range_len(const void *pvStart, const void *pvEnd)
 static void pvr_dma_cache_wback_inv(const void *pvStart, const void *pvEnd)
 {
 	size_t uLength = pvr_dma_range_len(pvStart, pvEnd);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37)
 	dma_cache_sync(NULL, (void *)pvStart, uLength, DMA_BIDIRECTIONAL);
-#else
-	dma_cache_wback_inv((unsigned long)pvStart, uLength);
-#endif
 }
 
 static void pvr_dma_cache_wback(const void *pvStart, const void *pvEnd)
 {
 	size_t uLength = pvr_dma_range_len(pvStart, pvEnd);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37)
 	dma_cache_sync(NULL, (void *)pvStart, uLength, DMA_TO_DEVICE);
-#else
-	dma_cache_wback((unsigned long)pvStart, uLength);
-#endif
 }
 
 static void pvr_dma_cache_inv(const void *pvStart, const void *pvEnd)
 {
 	size_t uLength = pvr_dma_range_len(pvStart, pvEnd);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37)
 	dma_cache_sync(NULL, (void *)pvStart, uLength, DMA_FROM_DEVICE);
-#else
-	dma_cache_inv((unsigned long)pvStart, uLength);
-#endif
 }
 
 IMG_VOID OSCleanCPUCacheKM(IMG_VOID)

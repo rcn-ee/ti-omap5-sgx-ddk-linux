@@ -45,12 +45,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/version.h>
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38))
-#ifndef AUTOCONF_INCLUDED
-#include <linux/config.h>
-#endif
-#endif
-
 #include <linux/slab.h>
 #include <linux/mm.h>
 #include <linux/list.h>
@@ -66,27 +60,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define	PAGES_TO_BYTES(pages) ((pages) << PAGE_SHIFT)
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,10))
 #define	REMAP_PFN_RANGE(vma, addr, pfn, size, prot) remap_pfn_range(vma, addr, pfn, size, prot)
-#else
-#define	REMAP_PFN_RANGE(vma, addr, pfn, size, prot) remap_page_range(vma, addr, PFN_TO_PHYS(pfn), size, prot)
-#endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,12))
 #define	IO_REMAP_PFN_RANGE(vma, addr, pfn, size, prot) io_remap_pfn_range(vma, addr, pfn, size, prot)
-#else
-#define	IO_REMAP_PFN_RANGE(vma, addr, pfn, size, prot) io_remap_page_range(vma, addr, PFN_TO_PHYS(pfn), size, prot)
-#endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,15))
 #define	VM_INSERT_PAGE(vma, addr, page) vm_insert_page(vma, addr, page)
-#else
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,10))
-#define VM_INSERT_PAGE(vma, addr, page) remap_pfn_range(vma, addr, page_to_pfn(page), PAGE_SIZE, vma->vm_page_prot);
-#else
-#define VM_INSERT_PAGE(vma, addr, page) remap_page_range(vma, addr, page_to_phys(page), PAGE_SIZE, vma->vm_page_prot);
-#endif
-#endif
 
 static inline IMG_UINTPTR_T VMallocToPhys(IMG_VOID *pCpuVAddr)
 {
@@ -195,11 +173,7 @@ struct _LinuxMemArea {
     struct list_head	sMMapOffsetStructList;
 };
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,17))
-typedef kmem_cache_t LinuxKMemCache;
-#else
 typedef struct kmem_cache LinuxKMemCache;
-#endif
 
 
 /*!
@@ -461,11 +435,7 @@ IMG_VOID KMemCacheDestroyWrapper(LinuxKMemCache *psCache);
 #define KMemCacheAllocWrapper(psCache, Flags) _KMemCacheAllocWrapper(psCache, Flags, NULL, 0)
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,14))
 IMG_VOID *_KMemCacheAllocWrapper(LinuxKMemCache *psCache, gfp_t Flags, IMG_CHAR *pszFileName, IMG_UINT32 ui32Line);
-#else
-IMG_VOID *_KMemCacheAllocWrapper(LinuxKMemCache *psCache, int Flags, IMG_CHAR *pszFileName, IMG_UINT32 ui32Line);
-#endif
 
 /*!
  *******************************************************************************
