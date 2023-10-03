@@ -41,8 +41,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "dmabuf.h"
 
-#if defined(SUPPORT_DMABUF)
-
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/err.h>
@@ -358,5 +356,3 @@ void DmaBufFreeNativeSyncHandle(IMG_HANDLE hSync)
 
 	kfree(info);
 }
-
-#endif /* defined(SUPPORT_DMABUF) */
