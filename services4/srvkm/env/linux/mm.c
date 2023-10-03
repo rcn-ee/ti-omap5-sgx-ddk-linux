@@ -1454,8 +1454,8 @@ NewAllocCmaLinuxMemArea(IMG_SIZE_T uBytes, IMG_UINT32 ui32AreaFlags)
     INIT_LIST_HEAD(&psLinuxMemArea->sMMapOffsetStructList);
 
 #if defined(DEBUG_LINUX_MEM_AREAS)
-    dev_err(&gpsPVRLDMDev->dev, "Allocating %d bytes from cma: 0x%llx\n", uBytes,
-            psLinuxMemArea->uData.sCmaRegion.dmaHandle);
+    dev_err(&gpsPVRLDMDev->dev, "Allocating %d bytes from cma: %pad\n", uBytes,
+            &psLinuxMemArea->uData.sCmaRegion.dmaHandle);
 #endif
 
     return psLinuxMemArea;
