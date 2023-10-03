@@ -94,9 +94,6 @@ IMG_VOID DmaBufUnimportAndReleasePhysAddr(IMG_HANDLE hImport)
 	{
 		dma_buf_vunmap(import->dma_buf, import->kvaddr);
 		dma_buf_end_cpu_access(import->dma_buf,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,6,0))
-					0, import->dma_buf->size,
-#endif
 					DMA_BIDIRECTIONAL);
 	}
 #endif /* defined(PDUMP) */
@@ -300,9 +297,6 @@ PVRSRV_ERROR DmaBufImportAndAcquirePhysAddr(const IMG_INT32 i32FD,
 
 #if defined(PDUMP)
 	err = dma_buf_begin_cpu_access(import->dma_buf,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,6,0))
-					0, import->dma_buf->size,
-#endif
 					DMA_BIDIRECTIONAL);
 	if (err)
 	{

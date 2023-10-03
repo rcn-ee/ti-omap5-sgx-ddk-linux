@@ -47,11 +47,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC) || defined(PVR_ANDROID_NATIVE_WINDOW_HAS_FENCE)
 #include <linux/version.h>
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,9,0))
-#include <../drivers/staging/android/sw_sync.h>
-#else
 #include <../drivers/dma-buf/sync_debug.h>
-#endif
 
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_FENCE)
 #include "pvrsrv_sync_server.h"

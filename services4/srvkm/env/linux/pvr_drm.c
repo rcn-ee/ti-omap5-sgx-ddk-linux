@@ -527,18 +527,6 @@ static struct drm_driver sPVRDrmDriver =
 #endif
 	.ioctls = sPVRDrmIoctls,
 	.fops = &sPVRFileOps,
-
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,5,0))
-#if defined(LDM_PLATFORM)
-	.set_busid = drm_platform_set_busid,
-#else
-#if defined(LDM_PCI)
-	.set_busid = drm_pci_set_busid,
-#else
-	#error "LDM_PLATFORM or LDM_PCI must be set"
-#endif
-#endif
-#endif
 	.name = "pvr",
 	.desc = PVR_DRM_DESC,
 	.date = PVR_DRM_DATE,

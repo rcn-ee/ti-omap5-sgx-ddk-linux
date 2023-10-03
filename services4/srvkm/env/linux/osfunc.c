@@ -43,11 +43,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <asm/io.h>
 #include <asm/page.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0))
 #include <asm/set_memory.h>
-#else
-#include <asm/cacheflush.h>
-#endif
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0))
  #include <linux/dma-map-ops.h>
 #endif
@@ -69,11 +65,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/time.h>
 #endif
 #include <linux/capability.h>
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,19,0))
-#include <asm/uaccess.h>
-#else
 #include <linux/uaccess.h>
-#endif
 #include <linux/spinlock.h>
 #if defined(PVR_LINUX_MISR_USING_WORKQUEUE) || \
 	defined(PVR_LINUX_MISR_USING_PRIVATE_WORKQUEUE) || \
@@ -2719,8 +2711,7 @@ static void OSTimerCallbackBody(TIMER_CALLBACK_DATA *psTimerCBData)
     mod_timer(&psTimerCBData->sTimer, psTimerCBData->ui32Delay + jiffies);
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
- /*!
+/*!
  ******************************************************************************
 
  @Function      OSTimerCallbackWrapper
@@ -2733,24 +2724,6 @@ static void OSTimerCallbackBody(TIMER_CALLBACK_DATA *psTimerCBData)
 static void OSTimerCallbackWrapper(struct timer_list *psTimer)
 {
 	TIMER_CALLBACK_DATA *psTimerCBData = from_timer(psTimerCBData, psTimer, sTimer);
-#else
-/*!
-******************************************************************************
-
- @Function	OSTimerCallbackWrapper
- 
- @Description 	OS specific timer callback wrapper function
- 
- @Input    ui32Data : timer callback data
-
- @Return   NONE
-
-******************************************************************************/
-static IMG_VOID OSTimerCallbackWrapper(IMG_UINTPTR_T uiData)
-{
-    TIMER_CALLBACK_DATA	*psTimerCBData = (TIMER_CALLBACK_DATA*)uiData;
-
-#endif
 
 #if defined(PVR_LINUX_TIMERS_USING_WORKQUEUES) || defined(PVR_LINUX_TIMERS_USING_SHARED_WORKQUEUE)
     int res;
@@ -2851,17 +2824,8 @@ IMG_HANDLE OSAddTimer(PFN_TIMER_FUNC pfnTimerFunc, IMG_VOID *pvData, IMG_UINT32 
                                 ?	1
                                 :	((HZ * ui32MsTimeout) / 1000);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
     timer_setup(&psTimerCBData->sTimer, OSTimerCallbackWrapper, 0);
-#else
-    /* initialise object */
-    init_timer(&psTimerCBData->sTimer);
-    
-    /* setup timer object */
-    /* PRQA S 0307,0563 1 */ /* ignore warning about inconpartible ptr casting */
-    psTimerCBData->sTimer.function = (IMG_VOID *)OSTimerCallbackWrapper;
-    psTimerCBData->sTimer.data = (IMG_UINTPTR_T)psTimerCBData;
-#endif
+
     return (IMG_HANDLE)(ui + 1);
 }
 
@@ -3377,9 +3341,7 @@ static IMG_BOOL CPUVAddrToPFN(struct vm_area_struct *psVMArea, IMG_UINTPTR_T uCP
     pud_t *psPUD;
     pmd_t *psPMD;
     pte_t *psPTE;
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,12,0))
     p4d_t *psP4D;
-#endif
     struct mm_struct *psMM = psVMArea->vm_mm;
     spinlock_t *psPTLock;
     IMG_BOOL bRet = IMG_FALSE;
@@ -3391,15 +3353,11 @@ static IMG_BOOL CPUVAddrToPFN(struct vm_area_struct *psVMArea, IMG_UINTPTR_T uCP
     if (pgd_none(*psPGD) || pgd_bad(*psPGD))
         return bRet;
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,12,0))
     psP4D = p4d_offset(psPGD, uCPUVAddr);
     if (p4d_none(*psP4D) || unlikely(p4d_bad(*psP4D)))
         return bRet;
 
     psPUD = pud_offset(psP4D, uCPUVAddr);
-#else
-    psPUD = pud_offset(psPGD, uCPUVAddr);
-#endif
     if (pud_none(*psPUD) || pud_bad(*psPUD))
         return bRet;
 
@@ -3482,11 +3440,7 @@ PVRSRV_ERROR OSReleasePhysPageAddr(IMG_HANDLE hOSWrapMem)
                         SetPageDirty(psPage);
                     }
 	        }
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,6,0))
-                page_cache_release(psPage);
-#else
                 put_page(psPage);
-#endif
 	    }
             break;
         }
@@ -3668,17 +3622,8 @@ PVRSRV_ERROR OSAcquirePhysPageAddr(IMG_VOID *pvCPUVAddr,
     bMMapSemHeld = IMG_TRUE;
 
     /* Get page list */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,6,0))
-    psInfo->iNumPagesMapped = get_user_pages(
-		current, current->mm,
-		uStartAddr, psInfo->iNumPages, 1, 0, psInfo->ppsPages, NULL);
-#elif (LINUX_VERSION_CODE < KERNEL_VERSION(4,9,0))
-    psInfo->iNumPagesMapped = get_user_pages(
-		uStartAddr, psInfo->iNumPages, 1, 0, psInfo->ppsPages, NULL);
-#else
     psInfo->iNumPagesMapped = get_user_pages(
 		uStartAddr, psInfo->iNumPages, 1, psInfo->ppsPages, NULL);
-#endif
 
     if (psInfo->iNumPagesMapped >= 0)
     {
@@ -4370,7 +4315,7 @@ IMG_BOOL OSInvalidateCPUCacheRangeKM(IMG_HANDLE hOSMemHandle,
 
 static void per_cpu_cache_flush(void *arg)
 {
-#if defined(__aarch64__) && (LINUX_VERSION_CODE >= KERNEL_VERSION(4,2,0))
+#if defined(__aarch64__)
 	unsigned long irqflags;
 	signed long Clidr, Csselr, LoC, Assoc, Nway, Nsets, Level, Lsize, Var;
 	static DEFINE_SPINLOCK(spinlock);
@@ -4778,16 +4723,6 @@ PVRSRV_ERROR PVROSFuncInit(IMG_VOID)
     }
 #endif
 
-#if defined(SUPPORT_ION) && !defined(LMA) && (LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0))
-	{
-		PVRSRV_ERROR eError;
-		eError = IonInit();
-		if (eError != PVRSRV_OK)
-		{
-			PVR_DPF((PVR_DBG_ERROR, "%s: IonInit failed", __FUNCTION__));
-		}
-	}
-#endif
     return PVRSRV_OK;
 }
 
