@@ -73,6 +73,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(PVR_LDM_DEVICE_TREE) && !defined(NO_HARDWARE)
 #define PVR_USE_DEVICE_TREE
+#include <linux/of_device.h>
 #endif
 
 #include <linux/init.h>
