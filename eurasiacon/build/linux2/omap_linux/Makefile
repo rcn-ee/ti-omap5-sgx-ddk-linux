@@ -166,11 +166,6 @@ PVR_DRM_MODESET_MODULE_NAME := dumb
 DISPLAY_CONTROLLER_COMPONENT :=
 DISPLAY_CONTROLLER :=
 
-ifneq ($(PVR_LWS_NODC),1)
-  PVR_OMAPLFB_DRM_FB := 0
-  PVR_OMAPLFB_DONT_USE_FB_PAN_DISPLAY := 1
-endif
-
 include ../config/core.mk
 include ../common/xorg.mk
 include ../common/dridrm.mk
