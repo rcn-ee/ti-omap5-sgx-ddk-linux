@@ -119,38 +119,20 @@ else
   SYS_CFLAGS := -march=armv7-a
 endif
 
-UBUNTU_TOOLCHAIN :=
-
-ifeq ($(CROSS_COMPILE),)
-  UBUNTU_TOOLCHAIN = 1
-else ifeq ($(CROSS_COMPILE),arm-linux-gnueabi-)
-  UBUNTU_TOOLCHAIN = 1
-else ifeq ($(CROSS_COMPILE),arm-linux-gnueabihf-)
-  UBUNTU_TOOLCHAIN = 1
-else ifeq ($(CROSS_COMPILE),arm-none-linux-gnueabihf-)
-  UBUNTU_TOOLCHAIN = 1
-else ifeq ($(CROSS_COMPILE),arm-oe-linux-gnueabi-)
-  UBUNTU_TOOLCHAIN = 1
+ifneq ($(CROSS_COMPILE),)
+  #check whether it should be trad
+  ifeq ($(ARCH), arm64)
+    #SYS_CFLAGS += -mtls-dialect=desc
+    SUPPORT_NEON ?= 0
+  else
+    #SYS_CFLAGS += -mtls-dialect=arm
+    SUPPORT_NEON ?= 1
+  endif
 endif
 
-ifeq ($(UBUNTU_TOOLCHAIN),)
-  OPTIM := -Os
-
-  ifneq ($(CROSS_COMPILE),)
-    #check whether it should be trad
-    ifeq ($(ARCH), arm64)
-      #SYS_CFLAGS += -mtls-dialect=desc
-      SUPPORT_NEON ?= 0
-    else
-      #SYS_CFLAGS += -mtls-dialect=arm
-      SUPPORT_NEON ?= 1
-    endif
-  endif
-
-  ifeq ($(SUPPORT_NEON),1)
-    SYS_CFLAGS += -ftree-vectorize -mfpu=neon -mfloat-abi=hard
-  endif
-endif	# UBUNTU_TOOLCHAIN
+ifeq ($(SUPPORT_NEON),1)
+  SYS_CFLAGS += -ftree-vectorize -mfpu=neon -mfloat-abi=hard
+endif
 
 SYS_CXXFLAGS := $(SYS_CFLAGS)
 SYS_LDFLAGS := $(SYS_CFLAGS)
