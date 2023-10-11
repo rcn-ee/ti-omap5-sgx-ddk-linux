@@ -171,8 +171,6 @@ ifneq ($(PVR_LWS_NODC),1)
   PVR_OMAPLFB_DONT_USE_FB_PAN_DISPLAY := 1
 endif
 
-OPK_DEFAULT := libpvrDRMWSEGL.so
-
 include ../config/core.mk
 include ../common/xorg.mk
 include ../common/dridrm.mk
