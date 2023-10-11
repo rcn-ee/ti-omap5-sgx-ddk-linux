@@ -77,7 +77,7 @@ PVRSRV_NEW_PVR_DPF := 1
 #PVRSRV_NEED_PVR_TRACE := 1
 
 # Disable active power management
-SUPPORT_ACTIVE_POWER_MANAGEMENT 	:= 0
+SUPPORT_ACTIVE_POWER_MANAGEMENT := 0
 
 # Disable Device Class
 SUPPORT_PVRSRV_DEVICE_CLASS := 0
@@ -99,15 +99,9 @@ PVR_LWS_NOBC := 1
 
 PVR_NO_OMAP_TIMER := 1
 
-PVR_SYSTEM		:= omap
+PVR_SYSTEM := omap
 
 KERNEL_COMPONENTS := srvkm
-ifeq ($(PVR_LWS_NOBC),)
-  BUFFERCLASS_MODULE := bufferclass_example
-  KERNEL_COMPONENTS += $(BUFFERCLASS_MODULE)
-endif
-
-SUPPORT_OLD_ION_API := 1
 
 # Only enable active power management if passive power management is
 # enabled, as indicated by LDM_PLATFORM being set to 1.  On OMAP,
@@ -115,19 +109,8 @@ SUPPORT_OLD_ION_API := 1
 # enabled in the SGX driver, but passive power management isn't. As
 # passive power management isn't enabled, the driver won't see the
 # system suspend/resume events, and so won't take appropriate action.
-LDM_PLATFORM ?= 1
-
-ifeq ($(LDM_PLATFORM),1)
-  SUPPORT_LINUX_USING_WORKQUEUES := 1
-  #With DRM EGL and display, omaplfb is not needed
-  #DISPLAY_CONTROLLER_COMPONENT += dc_omapfb3_linux
-  #DISPLAY_CONTROLLER := omaplfb
-else
-  SUPPORT_LINUX_USING_SHARED_WORKQUEUES := 1
-  OMAP_NON_FLIP_DISPLAY := 1
-  DISPLAY_CONTROLLER_COMPONENT += linux_framebuffer
-  DISPLAY_CONTROLLER := pvrlfb
-endif
+LDM_PLATFORM := 1
+SUPPORT_LINUX_USING_WORKQUEUES := 1
 
 ifeq ($(ARCH), arm64)
   #find the right number
@@ -177,71 +160,36 @@ LIBGCC := $(shell $(CROSS_COMPILE)gcc -print-libgcc-file-name)
 SGX_DYNAMIC_TIMING_INFO := 1
 SYS_CUSTOM_POWERLOCK_WRAP := 1
 
-ifeq ($(OMAP_NON_FLIP_DISPLAY),1)
-  OPK_DEFAULT := libpvrPVR2D_BLITWSEGL.so
+include ../common/xorg_test.mk
+include ../kernel_version.mk
+
+XORG_EXPLICIT_PVR_SERVICES_LOAD := 1
+SUPPORT_DRI_DRM := 1
+PVR_LDM_DEVICE_TREE := 1
+PVR_DRI_DRM_PLATFORM_DEV := 1
+SUPPORT_DMABUF := 1
+
+ifeq ($(TARGET_PRODUCT),ti335x)
+  PVR_DRM_MODESET_DRIVER_NAME := tilcdc
 else
-  OPK_DEFAULT := libpvrPVR2D_FLIPWSEGL.so
+  ifeq ($(TARGET_PRODUCT),ti654x)
+    PVR_DRM_MODESET_DRIVER_NAME := tidss
+  else
+    PVR_DRM_MODESET_DRIVER_NAME := omapdrm
+  endif
 endif
 
-include ../common/xorg_test.mk
+PVR_DRM_MODESET_MODULE_NAME := dumb
+# No display class driver.
+DISPLAY_CONTROLLER_COMPONENT :=
+DISPLAY_CONTROLLER :=
 
-ifneq ($(strip $(KERNELDIR)),)
-  include ../kernel_version.mk
+ifneq ($(PVR_LWS_NODC),1)
+  PVR_OMAPLFB_DRM_FB := 0
+  PVR_OMAPLFB_DONT_USE_FB_PAN_DISPLAY := 1
+endif
 
-  XORG_EXPLICIT_PVR_SERVICES_LOAD := 1
-  SUPPORT_DRI_DRM := 1
-  LDM_PLATFORM := 1
-  PVR_LDM_DEVICE_TREE := 1
-  PVR_DRI_DRM_PLATFORM_DEV := 1
-  SUPPORT_DMABUF := 1
-
-  ifeq ($(TARGET_PRODUCT),ti335x)
-    PVR_DRM_MODESET_DRIVER_NAME := tilcdc
-  else
-    ifeq ($(TARGET_PRODUCT),ti654x)
-      PVR_DRM_MODESET_DRIVER_NAME := tidss
-    else
-      PVR_DRM_MODESET_DRIVER_NAME := omapdrm
-    endif
-  endif
-
-  PVR_DRM_MODESET_MODULE_NAME := dumb
-  # No display class driver.
-  DISPLAY_CONTROLLER_COMPONENT :=
-  DISPLAY_CONTROLLER :=
-
-  ifeq ($(PVR_LWS_NODC),1)
-    # No display class driver.
-    DISPLAY_CONTROLLER :=
-  else
-    PVR_OMAPLFB_DRM_FB := 0
-    PVR_OMAPLFB_DONT_USE_FB_PAN_DISPLAY := 1
-  endif
-
-  OPK_DEFAULT := libpvrDRMWSEGL.so
-  PVR_DRI_DRM_PLATFORM_DEV := 1
-
-  ifeq ($(PVR_LWS_NODC),)
-    ifeq ($(SUPPORT_BUILD_XORG),1)
-      # A client DRI authorisation failure, whilst switched away from the X Server
-      # VT, prevents all other attempts at DRI authorisation, even after
-      # switching back to the X server VT, so don't perform a DRM drop master
-      # call.
-      PVR_XORG_DONT_DROP_MASTER_IN_LEAVE_VT := 1
-      XORG_PVR_VIDEO ?= omap4
-
-      ifneq ($(OMAP_NON_FLIP_DISPLAY),1)
-        PVR_DISPLAY_CONTROLLER_DRM_IOCTL := 1
-      endif
-    endif # xorg isn't excluded
-
-    ifeq ($(PVR_DRI_DRM_NOT_PCI),1)
-      KERNEL_COMPONENTS += linux_drm
-      EXTRA_KBUILD_SOURCE := $(KERNELDIR)
-    endif
-    KERNEL_COMPONENTS += $(DISPLAY_CONTROLLER)
-  endif	# PVR_LWS_NODC
-endif	# KERNELDIR
+OPK_DEFAULT := libpvrDRMWSEGL.so
 
 include ../config/core.mk
 include ../common/xorg.mk
