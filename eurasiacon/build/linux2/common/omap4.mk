@@ -39,5 +39,5 @@
 ### ###########################################################################
 
 $(eval $(call TunableKernelConfigC,PVR_NO_OMAP_TIMER,))
-$(eval $(call TunableKernelConfigC,PVR_OMAPLFB_DONT_USE_FB_PAN_DISPLAY,))
-$(eval $(call TunableKernelConfigC,PVR_OMAPLFB_DRM_FB,))
+$(eval $(call TunableKernelConfigC,SYS_OMAP_HAS_DVFS_FRAMEWORK,))
+$(eval $(call TunableUserConfigC,PVR_MUTEXES_COND_USING_PTHREAD_CONDVARS,1))

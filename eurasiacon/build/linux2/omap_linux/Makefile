@@ -171,7 +171,3 @@ include ../common/xorg.mk
 include ../common/dridrm.mk
 include ../common/opencl.mk
 include ../common/omap4.mk
-
-$(eval $(call TunableKernelConfigC,SYS_OMAP_HAS_DVFS_FRAMEWORK,))
-
-$(eval $(call TunableUserConfigC,PVR_MUTEXES_COND_USING_PTHREAD_CONDVARS,1))
