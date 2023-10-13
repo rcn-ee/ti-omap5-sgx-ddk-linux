@@ -35,8 +35,8 @@ export DISCIMAGE=<root of the target fs>
 export ARCH=arm64
 export CROSS_COMPILE=aarch64-linux-gnu-
 export KERNEL_CROSS_COMPILE=aarch64-linux-gnu-
-export WINDOW_SYSTEM=nulldrmws
-export TARGET_PRODUCT=<ti654x or other product>
+export WINDOW_SYSTEM=lws-generic
+export PVR_BUILD_DIR=<ti654x_linux or other product>
 ```
 
 If debug build is required:
@@ -50,7 +50,6 @@ export BUILD=debug
 
 Make sure that the kernel is built before building DDK KM.
 ```bash
-cd eurasiacon/build/linux2/omap_linux
 make -j <number of build threads>
 ```
 
@@ -66,14 +65,9 @@ This can be done as follows:
 cd $KERNELDIR
 sudo -E make INSTALL_MOD_PATH=$DISCIMAGE modules_install
 
-cd $DDKROOT/eurasia_km/eurasiacon/build/linux2/omap_linux
-sudo -E make TARGET_PRODUCT=ti654x install
+cd $DDKROOT
+sudo -E make install
 ```
-
-By default, the DDK is configured for Jacinto6 evm. To change or add make
-configuration, you will need to modify
-`eurasiacon/build/linux2/omap_linux/Makefile`.
-
 
 ### Android
 
@@ -88,7 +82,7 @@ export CROSS_COMPILE=${ANDROID_ROOT}/prebuilts/gcc/linux-x86/arm/arm-linux-andro
 export KERNEL_CROSS_COMPILE=${ANDROID_ROOT}/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
 export EXCLUDED_APIS="composerhal,camerahal,unittests,sensorhal"
 export ARCH=arm
-export TARGET_DEVICE=<am57xevm or other product>
+export PVR_BUILD_DIR=<am572x_linux or other product>
 export JAVA_HOME=${ANDROID_ROOT}/prebuilts/jdk/jdk8/linux-x86
 export PATH=${ANDROID_ROOT}/prebuilts/jdk/jdk8/linux-x86/bin:$PATH
 export USER_DIR=${DDK_ROOT}/eurasia/eurasiacon/build/linux2/omap_android
@@ -115,7 +109,7 @@ make -j <number of build threads>
 Copy the generated KM into the Android vendor project for the platform:
 
 ```bash
-cd ${DDK_ROOT}/eurasia_km/eurasiacon/binary2_omap_android_release/
+cd ${DDK_ROOT}/eurasia_km/eurasiacon/binary2_${PVR_BUILD_DIR}_android_release/
 cp target_armv7-a/kbuild/pvrsrvkm.ko ${ANDROID_ROOT}/vendor/ti/dra7xx/sgx_km/lib/modules/
 ```
 
