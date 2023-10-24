@@ -40,6 +40,10 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
+#if defined(__linux__)
+#include <linux/dma-mapping.h>
+#endif
+
 #include "sysconfig.h"
 #include "services_headers.h"
 #include "kerneldisplay.h"
@@ -316,6 +320,12 @@ PVRSRV_ERROR SysInitialise(IMG_VOID)
 #if !defined(SGX_DYNAMIC_TIMING_INFO)
 	SGX_TIMING_INFORMATION*	psTimingInfo;
 #endif
+
+#if defined(__linux__)
+	/* Required for hosts using 64 bit addresses */ 
+	dma_set_mask_and_coherent(&gpsPVRLDMDev->dev, DMA_BIT_MASK(32));
+#endif
+
 	gpsSysData = &gsSysData;
 	OSMemSet(gpsSysData, 0, sizeof(SYS_DATA));
 
