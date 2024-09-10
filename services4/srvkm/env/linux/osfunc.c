@@ -3336,52 +3336,64 @@ typedef struct _sWrapMemInfo_
 ******************************************************************************/
 static IMG_BOOL CPUVAddrToPFN(struct vm_area_struct *psVMArea, IMG_UINTPTR_T uCPUVAddr, IMG_UINT32 *pui32PFN, struct page **ppsPage)
 {
-    pgd_t *psPGD;
-    pud_t *psPUD;
-    pmd_t *psPMD;
-    pte_t *psPTE;
-    p4d_t *psP4D;
-    struct mm_struct *psMM = psVMArea->vm_mm;
-    spinlock_t *psPTLock;
-    IMG_BOOL bRet = IMG_FALSE;
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,12,0))
+	pgd_t *psPGD;
+	p4d_t *psP4D;
+	pud_t *psPUD;
+	pmd_t *psPMD;
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(5,12,0) */
+	pte_t *psPTE;
+	struct mm_struct *psMM = psVMArea->vm_mm;
+	spinlock_t *psPTLock;
+	IMG_BOOL bRet = IMG_FALSE;
 
-    *pui32PFN = 0;
-    *ppsPage = NULL;
+	*pui32PFN = 0;
+	*ppsPage = NULL;
 
-    psPGD = pgd_offset(psMM, uCPUVAddr);
-    if (pgd_none(*psPGD) || pgd_bad(*psPGD))
-        return bRet;
+	/* Walk the page tables to find the PTE */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,12,0))
+	psPGD = pgd_offset(psMM, uCPUVAddr);
+	if (pgd_none(*psPGD) || pgd_bad(*psPGD))
+		return bRet;
 
-    psP4D = p4d_offset(psPGD, uCPUVAddr);
-    if (p4d_none(*psP4D) || unlikely(p4d_bad(*psP4D)))
-        return bRet;
+	psP4D = p4d_offset(psPGD, uCPUVAddr);
+	if (p4d_none(*psP4D) || unlikely(p4d_bad(*psP4D)))
+		return bRet;
 
-    psPUD = pud_offset(psP4D, uCPUVAddr);
-    if (pud_none(*psPUD) || pud_bad(*psPUD))
-        return bRet;
+	psPUD = pud_offset(psP4D, uCPUVAddr);
+	if (pud_none(*psPUD) || pud_bad(*psPUD))
+		return bRet;
 
-    psPMD = pmd_offset(psPUD, uCPUVAddr);
-    if (pmd_none(*psPMD) || pmd_bad(*psPMD))
-        return bRet;
+	psPMD = pmd_offset(psPUD, uCPUVAddr);
+	if (pmd_none(*psPMD) || pmd_bad(*psPMD))
+		return bRet;
 
-    psPTE = (pte_t *)pte_offset_map_lock(psMM, psPMD, uCPUVAddr, &psPTLock);
+	psPTE = (pte_t *)pte_offset_map_lock(psMM, psPMD, uCPUVAddr, &psPTLock);
+#else /* LINUX_VERSION_CODE < KERNEL_VERSION(5,12,0) */
+	if (follow_pte(psMM, uCPUVAddr, &psPTE, &psPTLock) != 0)
+		return IMG_FALSE;
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(5,12,0) */
 
-    if ((pte_none(*psPTE) == 0) && (pte_present(*psPTE) != 0) && (pte_write(*psPTE) != 0))
-    {
-        *pui32PFN = pte_pfn(*psPTE);
-	bRet = IMG_TRUE;
+	/* Check if the returned PTE is actually valid and writable */
+	if ((pte_none(*psPTE) == 0) && (pte_present(*psPTE) != 0) && (pte_write(*psPTE) != 0))
+	{
+		*pui32PFN = pte_pfn(*psPTE);
+		bRet = IMG_TRUE;
 
-        if (pfn_valid(*pui32PFN))
-        {
-            *ppsPage = pfn_to_page(*pui32PFN);
+		/* In case the pfn is valid, meaning it is a RAM page and not
+		 * IO-remapped, we can get the actual page struct from it.
+		 */
+		if (pfn_valid(*pui32PFN))
+		{
+			*ppsPage = pfn_to_page(*pui32PFN);
 
-            get_page(*ppsPage);
-        }
-    }
+			get_page(*ppsPage);
+		}
+	}
 
-    pte_unmap_unlock(psPTE, psPTLock);
+	pte_unmap_unlock(psPTE, psPTLock);
 
-    return bRet;
+	return bRet;
 }
 
 /*!
