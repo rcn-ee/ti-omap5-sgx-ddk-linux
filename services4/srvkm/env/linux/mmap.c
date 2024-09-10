@@ -88,7 +88,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(SUPPORT_DRI_DRM)
 static inline int drm_mmap(struct file *filp, struct vm_area_struct *vma)
 {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0))
 	return drm_legacy_mmap(filp, vma);
+#else
+    /* this code path should never be taken, but if it does we want to know about it */
+    PVR_ASSERT(0);
+    return -ENOSYS;
+#endif
 }
 #endif
 
