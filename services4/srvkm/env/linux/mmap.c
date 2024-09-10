@@ -98,6 +98,29 @@ static inline int drm_mmap(struct file *filp, struct vm_area_struct *vma)
 }
 #endif
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)) || \
+	((LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)) && !defined(ANDROID))
+static inline void pvr_vm_flags_set(struct vm_area_struct *vma,
+				    vm_flags_t flags)
+{
+	vma->vm_flags |= flags;
+}
+static inline void pvr_vm_flags_init(struct vm_area_struct *vma,
+				     vm_flags_t flags)
+{
+	vma->vm_flags = flags;
+}
+static inline void pvr_vm_flags_clear(struct vm_area_struct *vma,
+				      vm_flags_t flags)
+{
+	vma->vm_flags &= ~flags;
+}
+#else
+#define pvr_vm_flags_set vm_flags_set
+#define pvr_vm_flags_init vm_flags_init
+#define pvr_vm_flags_clear vm_flags_clear
+#endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)) */
+
 /* WARNING:
  * The mmap code has its own mutex, to prevent a possible deadlock,
  * when using gPVRSRVLock.
@@ -750,7 +773,7 @@ DoMapToUser(LinuxMemArea *psLinuxMemArea,
 #if defined(PVR_MAKE_ALL_PFNS_SPECIAL)
 		if (bMixedMap)
 		{
-		        ps_vma->vm_flags |= VM_MIXEDMAP;
+		        pvr_vm_flags_set(ps_vma, VM_MIXEDMAP);
 		}
 #endif
 	/* Second pass, get the page structures and insert the pages */
@@ -1062,17 +1085,17 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
     PVR_DPF((PVR_DBG_MESSAGE, "%s: Mapped psLinuxMemArea 0x%p\n",
          __FUNCTION__, psOffsetStruct->psLinuxMemArea));
 
-    ps_vma->vm_flags |= VM_DONTDUMP;
-    ps_vma->vm_flags |= VM_IO;
+    pvr_vm_flags_set(ps_vma, VM_DONTDUMP);
+    pvr_vm_flags_set(ps_vma, VM_IO);
 
     /*
      * Disable mremap because our nopage handler assumes all
      * page requests have already been validated.
      */
-    ps_vma->vm_flags |= VM_DONTEXPAND;
+    pvr_vm_flags_set(ps_vma, VM_DONTEXPAND);
     
     /* Don't allow mapping to be inherited across a process fork */
-    ps_vma->vm_flags |= VM_DONTCOPY;
+    pvr_vm_flags_set(ps_vma, VM_DONTCOPY);
 
     ps_vma->vm_private_data = (void *)psOffsetStruct;
     
