@@ -514,7 +514,9 @@ static struct drm_driver sPVRDrmDriver =
 		| DRIVER_USE_PLATFORM_DEVICE
 #endif
 		,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6,1,0))
 	.dev_priv_size = 0,
+#endif
 	.load = PVRSRVDrmLoad,
 	.unload = PVRSRVDrmUnload,
 	.open = PVRSRVDrmOpen,
