@@ -56,6 +56,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/pci.h>
 #include <linux/platform_device.h>
 
+#include <linux/ktime.h>
 #include <linux/string.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
@@ -849,9 +850,9 @@ IMG_UINT32 OSGetCurrentProcessIDKM(IMG_VOID)
 *****************************************************************************/
 IMG_UINT32 OSGetCurrentTimeInUSecsKM(IMG_VOID)
 {
-	struct timeval          tv;
-	do_gettimeofday(&tv);
-	return (tv.tv_sec * 1000000 + tv.tv_usec);
+	ktime_t time;
+	time = ktime_get();
+	return (ktime_to_us(time));
 }
 #endif
 
