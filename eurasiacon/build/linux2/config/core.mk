@@ -505,7 +505,6 @@ ifneq ($(wildcard $(VMLINUX)),)
  VMLINUX_HAS_PAE36 := $(shell cat $(LINUXCFG) | grep CONFIG_X86_PAE=y >/dev/null || echo false)
  VMLINUX_HAS_PAE40 := $(shell cat $(LINUXCFG) | grep CONFIG_ARM_LPAE=y >/dev/null || echo false)
  VMLINUX_HAS_DMA32 := $(shell cat $(LINUXCFG) | grep CONFIG_ZONE_DMA32=y >/dev/null || echo false)
- VMLINUX_HAS_DMA := $(shell cat $(LINUXCFG) | grep CONFIG_ZONE_DMA=y >/dev/null || echo false)
  ifneq ($(VMLINUX_IS_64BIT),false)
   $(warning $$(KERNELDIR)/vmlinux: Note: vmlinux is 64-bit, which is supported but currently experimental.)
  endif
@@ -516,8 +515,8 @@ endif
 endif # KERNELDIR
 
 ifneq ($(VMLINUX_HAS_PAE40),false)
-ifeq ($(VMLINUX_HAS_DMA),false)
-$(warning SGX MMUs are currently supported up to only 36 bits max. Your Kernel is built with 40-bit PAE but does not have CONFIG_ZONE_DMA.)
+ifeq ($(VMLINUX_HAS_DMA32),false)
+$(warning SGX MMUs are currently supported up to only 36 bits max. Your Kernel is built with 40-bit PAE but does not have CONFIG_ZONE_DMA32.)
 $(warning This means you must ensure the runtime system has <= 4GB of RAM, or there will be BIG problems...)
 endif 
 endif
@@ -532,8 +531,8 @@ endif
 else
  # Kernel is 32-bit
 ifneq ($(VMLINUX_HAS_PAE36),false)
-ifeq ($(VMLINUX_HAS_DMA),false)
-$(warning SGX is configured with 32-bit MMU. Your Kernel is 32-bit PAE, but does not have CONFIG_ZONE_DMA. )
+ifeq ($(VMLINUX_HAS_DMA32),false)
+$(warning SGX is configured with 32-bit MMU. Your Kernel is 32-bit PAE, but does not have CONFIG_ZONE_DMA32. )
 $(warning This means you must ensure the runtime system has <= 4GB of RAM, or there will be BIG problems...)
 endif
 endif
