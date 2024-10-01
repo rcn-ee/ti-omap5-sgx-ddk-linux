@@ -226,18 +226,27 @@ OSAllocPages_Impl(IMG_UINT32 ui32AllocFlags,
             /* Currently PVRSRV_HAP_SINGLE_PROCESS implies that we dont need a
              * kernel virtual mapping, but will need a user space virtual mapping */
 
-            psLinuxMemArea = NewAllocCmaLinuxMemArea(uiSize, ui32AllocFlags);
-            if (!psLinuxMemArea)
+            if(LinuxGetCMARegion())
             {
+                psLinuxMemArea = NewAllocCmaLinuxMemArea(uiSize, ui32AllocFlags);
+                if(!psLinuxMemArea)
+                {
 #if defined(DEBUG_LINUX_MEM_AREAS)
-                dev_err(&gpsPVRLDMDev->dev, "CMA region is either exhausted or not present\n");
+                    dev_err(&gpsPVRLDMDev->dev, "CMA region is exhausted, using standard pages\n");
 #endif
+                    psLinuxMemArea = NewAllocPagesLinuxMemArea(uiSize, ui32AllocFlags);
+                }
+            }
+            else
+            {
                 psLinuxMemArea = NewAllocPagesLinuxMemArea(uiSize, ui32AllocFlags);
             }
+
             if(!psLinuxMemArea)
             {
                 return PVRSRV_ERROR_OUT_OF_MEMORY;
             }
+
             PVRMMapRegisterArea(psLinuxMemArea);
             break;
         }

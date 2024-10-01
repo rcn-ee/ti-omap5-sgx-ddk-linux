@@ -652,6 +652,7 @@ const IMG_CHAR *HAPFlagsToString(IMG_UINT32 ui32Flags);
 #endif
 
 IMG_VOID LinuxSetCMARegion(IMG_BOOL bCma);
+IMG_BOOL LinuxGetCMARegion(IMG_VOID);
 
 #endif /* __IMG_LINUX_MM_H__ */
 
