@@ -226,7 +226,7 @@ OSAllocPages_Impl(IMG_UINT32 ui32AllocFlags,
             /* Currently PVRSRV_HAP_SINGLE_PROCESS implies that we dont need a
              * kernel virtual mapping, but will need a user space virtual mapping */
 
-            if(LinuxGetCMARegion())
+            if(LinuxGetCMARegion() && ((ui32AllocFlags & PVRSRV_HAP_UNCACHED) == 0))
             {
                 psLinuxMemArea = NewAllocCmaLinuxMemArea(uiSize, ui32AllocFlags);
                 if(!psLinuxMemArea)
