@@ -705,6 +705,7 @@ DoMapToUser(LinuxMemArea *psLinuxMemArea,
 
 	PVR_ASSERT(psLinuxMemArea->hBMHandle == IMG_NULL);
 
+	ps_vma->vm_page_prot = pgprot_noncached(ps_vma->vm_page_prot);
 	result = IO_REMAP_PFN_RANGE(ps_vma, ps_vma->vm_start, ps_vma->vm_pgoff, uiByteSize, ps_vma->vm_page_prot);
 
         if(result == 0)
