@@ -49,8 +49,7 @@ usage() {
 }
 
 check_clang() {
-	$CC -dM -E - </dev/null | grep __clang__ >/dev/null 2>&1
-	if [ "$?" = "0" ]; then
+	if $CC -Wp,-dM -E - </dev/null | grep -q "__clang__"; then
 		# Clang must be passed a program with a main() that returns 0.
 		# It will produce an error if main() is improperly specified.
 		IS_CLANG=1
@@ -62,23 +61,27 @@ check_clang() {
 		# This will cause GCC to warn about the unsupported warning flag.
 		IS_CLANG=0
 		TEST_PROGRAM="int main(void){return;}"
+
+		# Bit check requires actually producing an object so GCC must
+		# receive a working program.
+		[ "$BIT_CHECK" = "1" ] && TEST_PROGRAM="int main(void){return 0;}"
 	fi
 }
 
 do_cc() {
-	echo "$TEST_PROGRAM" | $CC -W -Wall $3 -xc -c - -o $1 >$2 2>&1
+	echo "$TEST_PROGRAM" 2> /dev/null | $CC -W -Wall $3 -xc -c -o "$1" - > "$2" 2>&1
 }
 
-while [ 1 ]; do
+while true; do
 	if [ "$1" = "--64" ]; then
-		[ -z $CLANG ] && BIT_CHECK=1
+		[ -z "$CLANG" ] && BIT_CHECK=1
 	elif [ "$1" = "--clang" ]; then
-		[ -z $BIT_CHECK ] && CLANG=1
+		[ -z "$BIT_CHECK" ] && CLANG=1
 	elif [ "$1" = "--cc" ]; then
-		[ "x$2" = "x" ] && usage
+		[ -z "$2" ] && usage
 		CC="$2" && shift
 	elif [ "$1" = "--out" ]; then
-		[ "x$2" = "x" ] && usage
+		[ -z "$2" ] && usage
 		OUT="$2" && shift
 	elif [ "${1#--}" != "$1" ]; then
 		usage
@@ -88,32 +91,31 @@ while [ 1 ]; do
 	shift
 done
 
-[ "x$CC" = "x" ] && usage
-[ "x$CLANG" = "x" -a "x$OUT" = "x" ] && usage
+[ -z "$CC" ] && usage
+[ -z "$CLANG" ] && [ -z "$OUT" ] && usage
 ccof=$OUT/cc-sanity-check
 log=${ccof}.log
 
 check_clang
 
-if [ "x$BIT_CHECK" = "x1" ]; then
-	do_cc $ccof $log ""
-	file $ccof | grep 64-bit >/dev/null 2>&1
-	[ "$?" = "0" ] && echo true || echo false
-elif [ "x$CLANG" = "x1" ]; then
-	[ "x$IS_CLANG" = "x1" ] && echo true || echo false
+if [ "$BIT_CHECK" = "1" ]; then
+	do_cc "$ccof" "$log" ""
+	file "$ccof" | grep 64-bit >/dev/null 2>&1 && echo true || echo false
+elif [ "$CLANG" = "1" ]; then
+	[ "$IS_CLANG" = "1" ] && echo true || echo false
 else
-	[ "x$1" = "x" ] && usage
-	do_cc $ccof $log $1
-	if [ "$?" = "0" ]; then
-		# compile passed, but was the warning unrecognized?
-		if [ "x$IS_CLANG" = "x1" ]; then
-			grep "^warning: unknown warning option '$1'" $log >/dev/null 2>&1
-		else
-			grep "^cc1: warning: unrecognized command line option \"$1\"" $log >/dev/null 2>&1
-		fi
-		[ "$?" = "1" ] && echo $1
+	[ -z "$1" ] && usage
+	do_cc "$ccof" "$log" "$1"
+	if [ "$IS_CLANG" = "1" ]; then
+		grep -qE "(unknown.*option .$1.|argument.*unused.* .$1.|unknown.*argument.* .$1.)" "$log"
+	else
+		grep -qE "(unrecognized.*option .$1.|option .$1. .*C\+\+|.$1.*no option)" "$log"
+	fi
+	if [ "$?" = "1" ]; then
+		printf "%s\n" "$1"
+		printf "%s\n" "$1" >> "${OUT}/flags.txt"
 	fi
 fi
 
-rm -f $ccof $log
+rm -f "$ccof" "$log"
 exit 0
