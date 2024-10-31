@@ -52,6 +52,7 @@
 # These flags are used for kernel, User C and User C++
 #
 COMMON_FLAGS := -W -Wall
+PREFIX_MAP_PATH := $(abspath $(TARGET_PRIMARY_OUT))
 
 # Some GCC warnings are C only, so we must mask them from C++
 #
@@ -91,13 +92,13 @@ COMMON_USER_FLAGS += \
 #
 TESTED_TARGET_USER_FLAGS := \
  $(call cc-option,-Wno-missing-field-initializers) \
- $(call cc-option,-fmacro-prefix-map=$(srctree)/=) \
- $(call cc-option,-fdebug-prefix-map=$(srctree)/=) \
+ $(call cc-option,-fmacro-prefix-map=$(PREFIX_MAP_PATH)/=) \
+ $(call cc-option,-fdebug-prefix-map=$(PREFIX_MAP_PATH)/=) \
  $(call cc-option,-fdiagnostics-show-option)
 TESTED_HOST_USER_FLAGS := \
  $(call host-cc-option,-Wno-missing-field-initializers) \
- $(call host-cc-option,-fmacro-prefix-map=$(srctree)/=) \
- $(call host-cc-option,-fdebug-prefix-map=$(srctree)/=) \
+ $(call host-cc-option,-fmacro-prefix-map=$(PREFIX_MAP_PATH)/=) \
+ $(call host-cc-option,-fdebug-prefix-map=$(PREFIX_MAP_PATH)/=) \
  $(call host-cc-option,-fdiagnostics-show-option)
 
 # These flags are clang-specific.
@@ -172,8 +173,8 @@ TESTED_KBUILD_FLAGS := \
  $(call kernel-cc-option,-Wno-unused-but-set-variable) \
  $(call kernel-cc-option,-Wno-ignored-qualifiers) \
  $(call kernel-cc-option,-Wno-old-style-declaration) \
- $(call kernel-cc-option,-fmacro-prefix-map=$(srctree)/=) \
- $(call kernel-cc-option,-fdebug-prefix-map=$(srctree)/=) \
+ $(call kernel-cc-option,-fmacro-prefix-map=$(PREFIX_MAP_PATH)/=) \
+ $(call kernel-cc-option,-fdebug-prefix-map=$(PREFIX_MAP_PATH)/=) \
  $(call kernel-cc-optional-warning,-Wbad-function-cast) \
  $(call kernel-cc-optional-warning,-Wcast-qual) \
  $(call kernel-cc-optional-warning,-Wcast-align) \
