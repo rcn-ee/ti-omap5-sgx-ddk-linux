@@ -57,8 +57,8 @@ kbuild_check:
 	@: $(if $(filter-out command line override,$(origin build)),,$(error Overriding $$(build) (with "make build=...") will break kbuild))
 
 kbuild: kbuild_check $(TARGET_PRIMARY_OUT)/kbuild/Makefile
-	$(if $(V),,@)$(MAKE) -Rr --no-print-directory -C $(KERNELDIR) \
-		M=$(abspath $(TARGET_PRIMARY_OUT)/kbuild) \
+	$(if $(V),,@)$(MAKE) -Rr --no-print-directory -C "$(KERNELDIR)" \
+		M="$(abspath $(TARGET_PRIMARY_OUT)/kbuild)" \
 		INTERNAL_KBUILD_MAKEFILES="$(INTERNAL_KBUILD_MAKEFILES)" \
 		INTERNAL_KBUILD_OBJECTS="$(INTERNAL_KBUILD_OBJECTS)" \
 		INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
@@ -66,20 +66,20 @@ kbuild: kbuild_check $(TARGET_PRIMARY_OUT)/kbuild/Makefile
 		TARGET_PRIMARY_ARCH=$(TARGET_PRIMARY_ARCH) \
 		CROSS_COMPILE="$(CCACHE) $(KERNEL_CROSS_COMPILE)" \
 		EXTRA_CFLAGS="$(ALL_KBUILD_CFLAGS)" \
-		CC=$(if $(KERNEL_CC),$(KERNEL_CC),$(KERNEL_CROSS_COMPILE)gcc) \
-		AR=$(if $(KERNEL_AR),$(KERNEL_AR),$(KERNEL_CROSS_COMPILE)ar) \
-		LD=$(if $(KERNEL_LD),$(KERNEL_LD),$(KERNEL_CROSS_COMPILE)ld) \
-		NM=$(if $(KERNEL_NM),$(KERNEL_NM),$(KERNEL_CROSS_COMPILE)nm) \
-		OBJCOPY=$(if $(KERNEL_OBJCOPY),$(KERNEL_OBJCOPY),$(KERNEL_CROSS_COMPILE)objcopy) \
-		OBJDUMP=$(if $(KERNEL_OBJDUMP),$(KERNEL_OBJDUMP),$(KERNEL_CROSS_COMPILE)objdump) \
-		V=$(V) W=$(W) TOP=$(TOP)
+		CC="$(if $(KERNEL_CC),$(KERNEL_CC),$(KERNEL_CROSS_COMPILE)gcc)" \
+		AR="$(if $(KERNEL_AR),$(KERNEL_AR),$(KERNEL_CROSS_COMPILE)ar)" \
+		LD="$(if $(KERNEL_LD),$(KERNEL_LD),$(KERNEL_CROSS_COMPILE)ld)" \
+		NM="$(if $(KERNEL_NM),$(KERNEL_NM),$(KERNEL_CROSS_COMPILE)nm)" \
+		OBJCOPY="$(if $(KERNEL_OBJCOPY),$(KERNEL_OBJCOPY),$(KERNEL_CROSS_COMPILE)objcopy)" \
+		OBJDUMP="$(if $(KERNEL_OBJDUMP),$(KERNEL_OBJDUMP),$(KERNEL_CROSS_COMPILE)objdump)" \
+		V="$(V)" W="$(W)" TOP="$(TOP)"
 	@for kernel_module in $(addprefix $(TARGET_PRIMARY_OUT)/kbuild/,$(INTERNAL_KBUILD_OBJECTS:.o=.ko)); do \
 		cp $$kernel_module $(TARGET_PRIMARY_OUT); \
 	done
 
 kbuild_clean: kbuild_check $(TARGET_PRIMARY_OUT)/kbuild/Makefile
-	$(if $(V),,@)$(MAKE) -Rr --no-print-directory -C $(KERNELDIR) \
-		M=$(abspath $(TARGET_PRIMARY_OUT)/kbuild) \
+	$(if $(V),,@)$(MAKE) -Rr --no-print-directory -C "$(KERNELDIR)" \
+		M="$(abspath $(TARGET_PRIMARY_OUT)/kbuild)" \
 		INTERNAL_KBUILD_MAKEFILES="$(INTERNAL_KBUILD_MAKEFILES)" \
 		INTERNAL_KBUILD_OBJECTS="$(INTERNAL_KBUILD_OBJECTS)" \
 		INTERNAL_EXTRA_KBUILD_OBJECTS="$(INTERNAL_EXTRA_KBUILD_OBJECTS)" \
@@ -87,11 +87,11 @@ kbuild_clean: kbuild_check $(TARGET_PRIMARY_OUT)/kbuild/Makefile
 		TARGET_PRIMARY_ARCH=$(TARGET_PRIMARY_ARCH) \
 		CROSS_COMPILE="$(CCACHE) $(KERNEL_CROSS_COMPILE)" \
 		EXTRA_CFLAGS="$(ALL_KBUILD_CFLAGS)" \
-		CC=$(if $(KERNEL_CC),$(KERNEL_CC),$(KERNEL_CROSS_COMPILE)gcc) \
-		LD=$(if $(KERNEL_LD),$(KERNEL_LD),$(KERNEL_CROSS_COMPILE)ld) \
-		NM=$(if $(KERNEL_NM),$(KERNEL_NM),$(KERNEL_CROSS_COMPILE)nm) \
-		OBJCOPY=$(if $(KERNEL_OBJCOPY),$(KERNEL_OBJCOPY),$(KERNEL_CROSS_COMPILE)objcopy) \
-		V=$(V) W=$(W) TOP=$(TOP) clean
+		CC="$(if $(KERNEL_CC),$(KERNEL_CC),$(KERNEL_CROSS_COMPILE)gcc)" \
+		LD="$(if $(KERNEL_LD),$(KERNEL_LD),$(KERNEL_CROSS_COMPILE)ld)" \
+		NM="$(if $(KERNEL_NM),$(KERNEL_NM),$(KERNEL_CROSS_COMPILE)nm)" \
+		OBJCOPY="$(if $(KERNEL_OBJCOPY),$(KERNEL_OBJCOPY),$(KERNEL_CROSS_COMPILE)objcopy)" \
+		V="$(V)" W="$(W)" TOP="$(TOP)" clean
 
 kbuild_install: install
 kbuild: install_script_km
