@@ -71,8 +71,8 @@ KERNEL_ID ?= \
 #
 ifeq ($(strip $(KERNEL_ID)),)
 KERNEL_ID := \
- $(shell grep -h '\#define UTS_RELEASE' \
-	$(KERNELDIR)/include/linux/* | cut -f3 -d' ' | sed s/\"//g)
+ $(shell find "$(KERNELDIR)/include/linux" -type f -maxdepth 1 -exec \
+  sed -n '/UTS_RELEASE.*/{ s/.*"\(.*\)".*/\1/p }' '{}' \+)
 endif
 
 ifeq ($(strip $(KERNEL_ID)),)
