@@ -434,7 +434,13 @@ PVRSRVPciRemove(struct pci_dev *dev)
  * to be taken.
  */
 #define	PVR_DRM_FOPS_IOCTL	.unlocked_ioctl
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0))
 #define	PVR_DRM_UNLOCKED	DRM_UNLOCKED
+#else
+/* DRM_UNLOCKED no longer present, exisitng kernel code removes define and uses 0 in its place */
+#define	PVR_DRM_UNLOCKED	0
+#endif
 
 #if !defined(DRM_IOCTL_DEF_DRV)
 #define DRM_IOCTL_DEF_DRV(ioctl, _func, _flags) DRM_IOCTL_DEF(DRM_##ioctl, _func, _flags)
@@ -460,7 +466,11 @@ static int pvr_max_ioctl = DRM_ARRAY_SIZE(sPVRDrmIoctls);
 #if defined(PVR_DRI_DRM_PLATFORM_DEV) && !defined(SUPPORT_DRI_DRM_EXT) && \
 	!defined(SUPPORT_DRI_DRM_PLUGIN)
 static int PVRSRVDrmProbe(struct platform_device *pDevice);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
 static int PVRSRVDrmRemove(struct platform_device *pDevice);
+#else
+static void PVRSRVDrmRemove(struct platform_device *pDevice);
+#endif
 #endif	/* defined(PVR_DRI_DRM_PLATFORM_DEV) && !defined(SUPPORT_DRI_DRM_EXT) */
 
 #if defined(SUPPORT_DRI_DRM_PLUGIN)
@@ -512,6 +522,9 @@ static const struct file_operations sPVRFileOps =
 #endif
 	.mmap = PVRMMap,
 	.poll = drm_poll,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6,12,0))
+	.fop_flags = FOP_UNSIGNED_OFFSET,
+#endif
 };
 
 static struct drm_driver sPVRDrmDriver = 
@@ -626,7 +639,11 @@ PVRSRVDrmProbe(struct platform_device *pDevice)
 #endif
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
 static int
+#else
+static void
+#endif
 PVRSRVDrmRemove(struct platform_device *pDevice)
 {
 	struct drm_device *drm_dev = platform_get_drvdata(pDevice);
@@ -636,7 +653,9 @@ PVRSRVDrmRemove(struct platform_device *pDevice)
 	drm_dev_unregister(drm_dev);
 	drm_dev_put(drm_dev);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
 	return 0;
+#endif
 }
 #endif
 

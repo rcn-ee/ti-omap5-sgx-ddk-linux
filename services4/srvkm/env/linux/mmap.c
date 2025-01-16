@@ -56,7 +56,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <drm/drm_file.h>
 #include <drm/drm_drv.h>
 #include <drm/drm_device.h>
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0))
 #include <drm/drm_legacy.h>
+#endif
 #endif
 
 #ifdef CONFIG_ARCH_OMAP5

@@ -57,7 +57,7 @@ PREFIX_MAP_PATH := $(abspath $(TARGET_PRIMARY_OUT))
 # Some GCC warnings are C only, so we must mask them from C++
 #
 COMMON_CFLAGS := $(COMMON_FLAGS) \
- -Wdeclaration-after-statement -Wno-format-zero-length \
+ -Wno-format-zero-length \
  -Wmissing-prototypes -Wstrict-prototypes
 
 # User C and User C++ optimization control. Does not affect kernel.

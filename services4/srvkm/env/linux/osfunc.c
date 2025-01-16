@@ -3352,9 +3352,14 @@ static IMG_BOOL CPUVAddrToPFN(struct vm_area_struct *psVMArea, IMG_UINTPTR_T uCP
 	pud_t *psPUD;
 	pmd_t *psPMD;
 #endif /* LINUX_VERSION_CODE < KERNEL_VERSION(5,12,0) */
-	pte_t *psPTE;
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0))
 	struct mm_struct *psMM = psVMArea->vm_mm;
+	pte_t *psPTE;
 	spinlock_t *psPTLock;
+#else
+	struct follow_pfnmap_args args = { .vma = psVMArea, .address = uCPUVAddr };
+#endif
 	IMG_BOOL bRet = IMG_FALSE;
 
 	*pui32PFN = 0;
@@ -3380,10 +3385,16 @@ static IMG_BOOL CPUVAddrToPFN(struct vm_area_struct *psVMArea, IMG_UINTPTR_T uCP
 
 	psPTE = (pte_t *)pte_offset_map_lock(psMM, psPMD, uCPUVAddr, &psPTLock);
 #else /* LINUX_VERSION_CODE < KERNEL_VERSION(5,12,0) */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
 	if (follow_pte(psMM, uCPUVAddr, &psPTE, &psPTLock) != 0)
 		return IMG_FALSE;
+#else
+	if(follow_pfnmap_start(&args) != 0)
+		return IMG_FALSE;
+#endif
 #endif /* LINUX_VERSION_CODE < KERNEL_VERSION(5,12,0) */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
 	/* Check if the returned PTE is actually valid and writable */
 	if ((pte_none(*psPTE) == 0) && (pte_present(*psPTE) != 0) && (pte_write(*psPTE) != 0))
 	{
@@ -3400,8 +3411,18 @@ static IMG_BOOL CPUVAddrToPFN(struct vm_area_struct *psVMArea, IMG_UINTPTR_T uCP
 			get_page(*ppsPage);
 		}
 	}
-
 	pte_unmap_unlock(psPTE, psPTLock);
+#else
+	*pui32PFN = args.pfn;
+	if (pfn_valid(*pui32PFN))
+	{
+		*ppsPage = pfn_to_page(*pui32PFN);
+
+		get_page(*ppsPage); /* increase the reference count on page */
+	}
+	bRet = IMG_TRUE;
+	follow_pfnmap_end(&args);
+#endif
 
 	return bRet;
 }
