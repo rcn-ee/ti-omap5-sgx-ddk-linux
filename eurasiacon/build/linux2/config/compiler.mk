@@ -44,6 +44,15 @@ ifeq ($(strip $(MULTIARCH)),0)
 $(error MULTIARCH must be empty to disable multiarch)
 endif
 
+# Some compilers specify hardfloat support via arguments, override preferred
+# target if that is the case
+define check-arm-float-flags
+ $(1)_float_abi := $$(lastword $$(subst =, ,$$(filter -mfloat-abi=%,$$(SYS_CFLAGS))))
+ ifneq ($$(filter hard,$$($(1)_float_abi)),)
+  $(1)_compiler_preferred_target := arm-linux-gnueabihf
+ endif
+endef
+
 define calculate-compiler-preferred-target
  ifeq ($(2),qcc)
   $(1)_compiler_preferred_target := qcc
@@ -68,11 +77,14 @@ define calculate-compiler-preferred-target
   ifneq ($$(filter aarch64-%,$$($(1)_compiler_preferred_target)),)
    $(1)_compiler_preferred_target := aarch64-linux-gnu
   endif
-  ifneq ($$(filter arm-%-gnueabihf arm-oe-linux-gnueabi arm-poky-linux-gnueabi arm-yoe-linux-gnueabi arm-oe-linux-musleabi arm-poky-linux-musleabi arm-yoe-linux-musleabi,$$($(1)_compiler_preferred_target)),)
-   $(1)_compiler_preferred_target := arm-linux-gnueabihf
-  endif
   ifneq ($$(filter arm-%-gnueabi armv7a-cros-linux-gnueabi armv7hl-redhat-linux-gnueabi,$$($(1)_compiler_preferred_target)),)
    $(1)_compiler_preferred_target := arm-linux-gnueabi
+  endif
+  ifneq ($$(filter arm-%-gnueabihf,$$($(1)_compiler_preferred_target)),)
+   $(1)_compiler_preferred_target := arm-linux-gnueabihf
+  endif
+  ifneq ($$(filter arm-%,$$($(1)_compiler_preferred_target)),)
+   $$(eval $$(call check-arm-float-flags,$(1)))
   endif
  endif
 endef
